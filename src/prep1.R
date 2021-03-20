@@ -65,8 +65,8 @@ access_log$X1 <- iconv(access_log$X1, "UTF-8", "UTF-8", sub = '')
     arrange(lg_ip, lg_cz_ts)
 
   # verwijder mislukte requests ----
-  cz_log.3 <- cz_log.2 %>%
-    filter(!is.na(lg_n_bytes), lg_http_resp_sts == "200")
+  # cz_log.3 <- cz_log.2 %>%
+  #   filter(!is.na(lg_n_bytes), lg_http_resp_sts == "200")
   
   # verwijder spiders/bots ----
   # cz_log.4 <- cz_log.3 %>% 
@@ -85,10 +85,10 @@ access_log$X1 <- iconv(access_log$X1, "UTF-8", "UTF-8", sub = '')
   # )
   
   rm(cz_log.1,
-     cz_log.2,
+     # cz_log.2,
      access_log)
   
-  return(cz_log.3)
+  return(cz_log.2)
 }
 
 for (some_log in cz_log_files) {
