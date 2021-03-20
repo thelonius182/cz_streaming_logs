@@ -17,47 +17,50 @@ feb_2021 <- interval(ymd("2021-02-01"), rollback(ymd("2021-03-01")))
 # feb 2021 only
 ana_2021.02 <- ana_full %>%
   filter(lg_cz_ts %within% feb_2021) %>% 
-  # split http-reg
+  # split http-request
   separate(lg_http_req, into = c("lg_http_cmd", "lg_cz_channel", "lg_http_protocol"), sep = " ") %>% 
-  # http-200 only
-  filter(lg_http_resp_sts == "200")
+  # "OK"-responses only
+  filter(lg_http_resp_sts == "200") %>% 
+  # drop redundant columns
+  select(-lg_http_cmd, -lg_http_protocol, -lg_some_url, -lg_http_resp_sts) %>% 
+  # clean-up channel names & bytes
+  mutate(lg_cz_channel = str_replace_all(lg_cz_channel, pattern = "/", replacement = ""),
+         lg_n_bytes = as.numeric(lg_n_bytes))
 
-cz_bots.1 <- ana_2021.02 %>% 
-  filter(str_detect(lg_usr_agt, pattern = "bot[\\s_ :,.;/-]"))
+saveRDS(ana_2021.02, "ana_2021.02.RDS")
 
-cz_bots.2 <- ana_2021.02 %>% 
-  filter(is.na(lg_usr_agt))
+channels <- ana_2021.02 %>% select(lg_cz_channel) %>% distinct() %>% 
+  filter(!(str_detect(lg_cz_channel, pattern = "[.]|admin|test13") | str_length(str_trim(lg_cz_channel)) == 0))
 
-cz_bots.3 <- ana_2021.02 %>% 
-  filter(str_detect(lg_usr_agt, pattern = "dalvik/"))
+# remove non-channel traffic
+cz_stats.01 <- ana_2021.02 %>% filter(lg_cz_channel %in% channels$lg_cz_channel)
 
-cz_bots.4 <- ana_2021.02 %>% 
-  filter(str_detect(lg_usr_agt, pattern = "bingbot/"))
+# remove obvious bots
+cz_stats.02 <- cz_stats.01 %>% 
+  filter(!str_detect(lg_usr_agt, 
+                     pattern = "(bot|crawler|spider|checker|scanner|grabber|getter|java|python)[\\s_:,.;/-]?")) %>% 
+  filter(!str_detect(lg_usr_agt, pattern = "curl|wget"))
 
-cz_bots.5 <- ana_2021.02 %>% 
-  filter(str_detect(lg_usr_agt, pattern = "core"))
+# collect user-agents
+# stats_ua <-
+#   cz_stats.02 %>% group_by(lg_usr_agt) %>% 
+#   summarise(n_visits = n(),
+#             streamed_MB = round(sum(lg_n_bytes)/1024/1024, digits = 2))
 
-cz_n_ips <- ana_2021.02 %>% select(lg_ip) %>% distinct()
+# reproduce csv-example
+# regex "live"  streams on 320 kbps = 40 kB/s. 30 sec session duration = 1200 kB = 1200 * 1024 bytes
+# regex !"live" streams on 160 kbps = 20 kB/s. 30 sec session duration =  600 kB =  600 * 1024 bytes
+cz_stats.03 <- cz_stats.02 %>% 
+  mutate(lg_date = date(lg_cz_ts),
+         lg_valid_session = if_else(str_detect(lg_cz_channel, pattern = "live"),
+                                    lg_n_bytes > 1228800,
+                                    lg_n_bytes > 614400)) %>% 
+  filter(lg_valid_session)
 
-cz_n_usr_agts <- ana_2021.02 %>% select(lg_usr_agt) %>% distinct()
+cz_stats.04 <- cz_stats.03 %>% 
+  group_by(lg_date) %>% 
+  summarise(n_valid_sessions = n())
 
-cz_stats.1 <- ana_2021.02 %>%
-  group_by(lg_ip, lg_usr_agt) %>%
-  summarise(n_visits = n(),
-            bandwidth_MB = round(sum(as.integer(lg_n_bytes))/1024/1024, digits = 2)) %>% 
-  mutate(avg_MB_by_visit = round(bandwidth_MB/n_visits, digits = 2))
+write_delim(cz_stats.04, delim = "\t", file = "cz_stats_verify.tsv")
 
-channel <- ana_full %>%
-  filter(title == "oudemuziek" &
-           cz_ts_ymd %within% feb_2021 &
-           cz_seconds >= 300L) %>% 
-  arrange(cz_ts_ymd, cz_ts_h, ip)
-
-channel.listeners_by_day_by_hour <- oudemuziek %>% 
-  select(cz_ts_ymd, ip) %>% 
-  group_by(cz_ts_ymd) %>%
-  distinct(ip) %>% 
-  summarize(n_ips = n()) %>% 
-  mutate(n_ips_roll = cumsum(n_ips))
-
-live <- ana_full %>% filter(title == "live" & cz_ts_ymd %within% feb_2021) %>% arrange(cz_ts_ymd, cz_ts_h, ip)
+write_delim(channels, delim = "\t", file = "cz_stats_verify_channels.tsv")
