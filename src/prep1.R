@@ -82,6 +82,4 @@ for (some_log in cz_log_files) {
   ana_full <- bind_rows(ana_full, ana_single)
 }
 
-# ana_full <- bind_rows(ana_full, cz_log.2)
-
 saveRDS(ana_full, file = "ana_full.RDS")
