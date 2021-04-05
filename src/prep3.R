@@ -28,80 +28,84 @@ cz_stats.01 <- ana_2021.02 %>%
   filter(lg_cz_channel %in% channels$lg_cz_channel) %>% 
   # remove obvious bots
   filter(!str_detect(lg_usr_agt,
-                     pattern = "(bot|crawler|spider|checker|scanner|grabber|getter)[\\s_:,.;/)-]?")
+                     pattern = "(bot|crawler|spider|checker|scanner|grabber|getter|\\(null\\))[\\s_:,.;/)-]?")
   )
 
 # infer seconds listened using 256 kBps for live-stream and 128 kBps for others
-# and apply StreamAnalyst Tuning Hours Adjustment (SATHA) derived from "SA validations.ods"
-SATHA <- 0.972
 cz_stats.01a <- cz_stats.01 %>% 
-  mutate(lg_secs_listened = if_else(str_detect(lg_cz_channel, "\\blive\\b"), 
-                                    round(lg_n_bytes * SATHA * 8 / 1024 / 256, 0), 
-                                    round(lg_n_bytes * SATHA * 8 / 1024 / 128, 0)
+  mutate(lg_secs_listened_ini = if_else(str_detect(lg_cz_channel, "\\blive\\b"), 
+                                    round(lg_n_bytes * 8 / 1024 / 256, 0), 
+                                    round(lg_n_bytes * 8 / 1024 / 128, 0)
                                     )
   )
 
-# # skip listening sessions < 30 secs
-cz_stats.01b <- cz_stats.01a %>%
-  filter(lg_secs_listened > 30L)
-
 # calculate time-attributes
-bin_size <- 6 * 60 * 60 # n_secs in 6 hours
-cz_stats.02a <- cz_stats.01b %>% 
+# NB - data from jan '21 are missing!
+MONTH_END <- ymd_hms("2021-03-01 00:00:00") - seconds(1)
+cz_stats.02a <- cz_stats.01a %>% 
   mutate(lg_lstn_start = lg_cz_ts,
-         lg_lstn_start_bin = lg_lstn_start,
-         lg_lstn_stop = lg_lstn_start + seconds(lg_secs_listened),
-         lg_lstn_stop_bin = lg_lstn_stop)
+         lg_lstn_stop = lg_lstn_start + seconds(lg_secs_listened_ini),
+         # adjust stop time for end-of-month
+         lg_lstn_stop_eom = if_else(lg_lstn_stop <= MONTH_END, lg_lstn_stop, MONTH_END),
+         # recalculate seconds listened after end-of-month adjustment
+         lg_secs_listened_eom = int_length(interval(lg_lstn_start, lg_lstn_stop_eom)))
 
-minute(cz_stats.02a$lg_lstn_start_bin) <- 0
-second(cz_stats.02a$lg_lstn_start_bin) <- 0
-hour(cz_stats.02a$lg_lstn_start_bin) <- case_when(hour(cz_stats.02a$lg_lstn_start) < 6 ~ 3,
-                                              hour(cz_stats.02a$lg_lstn_start) < 12 ~ 9,
-                                              hour(cz_stats.02a$lg_lstn_start) < 18 ~ 15,
-                                              T ~ 21)
+# sessions shorter than 30 seconds are not to be considered as "listening sessions"
+cz_stats.02a1 <- cz_stats.02a %>%
+  filter(lg_secs_listened_eom > 30L)
 
-minute(cz_stats.02a$lg_lstn_stop_bin) <- 0
-second(cz_stats.02a$lg_lstn_stop_bin) <- 0
-hour(cz_stats.02a$lg_lstn_stop_bin) <- case_when(hour(cz_stats.02a$lg_lstn_stop) < 6 ~ 3,
+# StreamAnalyst Tuning Hours
+SATH <- 188061
+
+# Teamservice Tuning hours
+TTA <- sum(cz_stats.02a1$lg_secs_listened_eom) / 3600
+
+# StreamAnalyst Tuning Hours Adjustment (SATHA) 
+SATHA <- SATH / TTA
+
+# match Teamservice results to StreamAnalyst results 
+cz_stats.02a2 <- cz_stats.02a1 %>% mutate(lg_secs_listened = lg_secs_listened_eom * SATHA)
+
+# recalculate time-attributes
+cz_stats.03 <- cz_stats.02a2 %>% 
+  mutate(lg_lstn_stop = lg_lstn_start + seconds(lg_secs_listened),
+         lg_lstn_stop_eom = if_else(lg_lstn_stop <= MONTH_END, lg_lstn_stop, MONTH_END),
+         lg_lstn_stop_bin = lg_lstn_stop_eom)
+
+minute(cz_stats.02a2$lg_lstn_start_bin) <- 0
+second(cz_stats.02a2$lg_lstn_start_bin) <- 0
+hour(cz_stats.02a2$lg_lstn_start_bin) <- case_when(hour(cz_stats.02a2$lg_lstn_start) < 6 ~ 3,
+                                                   hour(cz_stats.02a2$lg_lstn_start) < 12 ~ 9,
+                                                   hour(cz_stats.02a2$lg_lstn_start) < 18 ~ 15,
+                                                   T ~ 21)
+
+minute(cz_stats.02a2$lg_lstn_stop_bin) <- 0
+second(cz_stats.02a2$lg_lstn_stop_bin) <- 0
+hour(cz_stats.02a2$lg_lstn_stop_bin) <- case_when(hour(cz_stats.02a2$lg_lstn_stop) < 6 ~ 3,
                                               hour(cz_stats.02a$lg_lstn_stop) < 12 ~ 9,
                                               hour(cz_stats.02a$lg_lstn_stop) < 18 ~ 15,
                                               T ~ 21)
+
+bin_size <- 6 * 60 * 60 # n_secs in 6 hours
 
 cz_stats.02b <- cz_stats.02a %>% 
   mutate(lg_n_bins = 1 + int_length(lg_lstn_start_bin %--% lg_lstn_stop_bin) / bin_size,
          lg_secs_listened_by_bin = round(lg_secs_listened / lg_n_bins, 0),
          lg_bin_start_date = date(lg_lstn_start_bin),
-         lg_bin_start_idx = (hour(lg_lstn_start_bin) - 3) / 6)
+         lg_bin_start_idx = 1 + (hour(lg_lstn_start_bin) - 3) / 6)
 
-# 
-# cz_stats.04 <- cz_stats.03 %>% 
-#   group_by(lg_date) %>% 
-#   summarise(n_sessions = n())
-# 
-# write_delim(cz_stats.04, delim = "\t", file = "cz_stats_n_sessions.tsv")
-# 
-# cz_stats.05 <- cz_stats.03 %>% 
-#   group_by(lg_date) %>% 
-#   summarise(n_hrs_listened = sum(lg_secs_listened) / 3600)
-# 
-# write_delim(cz_stats.05, delim = "\t", file = "cz_stats_hrs_listened.tsv")
-# 
-# cz_stats.06 <- cz_stats.03 %>% 
-#   filter(lg_cz_channel == "jazznotjazz") %>% 
-#   group_by(lg_date) %>% 
-#   summarise(n_hrs_listened_ = sum(lg_secs_listened) / 3600)
-# 
-# write_delim(cz_stats.06, delim = "\t", file = "cz_stats_hrs_lstnd_jnj.tsv")
-# 
-# cz_stats.07 <- cz_stats.03 %>% 
-#   filter(lg_cz_channel == "jazznotjazz") %>% 
-#   group_by(lg_date) %>% 
-#   summarise(n_hrs_listened_ = sum(lg_secs_listened) / 3600)
-# 
-# write_delim(cz_stats.06, delim = "\t", file = "cz_stats_hrs_lstnd_jnj.tsv")
-# 
-# write_delim(channels, delim = "\t", file = "cz_stats_verify_channels.tsv")
-# 
+cz_stats.03 <- cz_stats.02b %>%
+  group_by(lg_bin_start_date) %>%
+  summarise(n_sessions = n())
+
+write_delim(cz_stats.03, delim = "\t", file = "cz_stats_n_sessions.tsv")
+
+cz_stats.04 <- cz_stats.02b %>%
+  group_by(lg_bin_start_date) %>%
+  summarise(n_hrs_listened = sum(lg_secs_listened) / 3600.0)
+
+write_delim(cz_stats.04, delim = "\t", file = "cz_stats_hrs_listened.tsv")
+ 
 # cz_curl <- "curl 'https://freegeoip.app/json/51.91.219.191' \
 #   -H 'authority: freegeoip.app' \
 #   -H 'dnt: 1' \
