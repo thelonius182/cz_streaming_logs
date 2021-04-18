@@ -6,11 +6,11 @@ library(lubridate)
 library(fs)
 library(futile.logger)
 
-fa <- flog.appender(appender.file("/home/lon/Documents/cz_ana.log"), "cz_ana_log")
+fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_cha_log")
 
 cz_log_files <- dir_ls(path = "/home/lon/Documents/cz_streaming_logs/", regexp = "access.+")
 
-ana_full <- tibble(
+cz_stats_cha <- tibble(
   lg_ip = "a",
   lg_cz_ts = ymd_hms("1970-01-01 01:02:03"),
   lg_http_req = "c",
@@ -23,7 +23,7 @@ ana_full <- tibble(
 
 analyze_log <- function(logfile) {
   # logfile <- "/home/lon/Documents/cz_streaming_logs/access.log.7"
-  flog.info(paste0("log file: ", logfile), name = "cz_ana_log")
+  flog.info(paste0("log file: ", logfile), name = "cz_stats_cha_log")
 
   # inlezen ----  
   suppressMessages(
@@ -79,7 +79,9 @@ access_log$X1 <- iconv(access_log$X1, "UTF-8", "UTF-8", sub = '')
 
 for (some_log in cz_log_files) {
   ana_single <- analyze_log(some_log)
-  ana_full <- bind_rows(ana_full, ana_single)
+  cz_stats_cha <- bind_rows(cz_stats_cha, ana_single)
 }
 
-saveRDS(ana_full, file = "ana_full.RDS")
+rm(ana_single)
+
+saveRDS(cz_stats_cha, file = "cz_stats_cha.RDS")
