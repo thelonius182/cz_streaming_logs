@@ -11,144 +11,63 @@ library(httr)
 
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_cha_log")
 
-if (!exists(x = "cz_stats_cha.01")) {
-  cz_stats_cha.01 <- readRDS(file = "cz_stats_cha.01.RDS")
+if (!exists(x = "cz_stats_cha.01a")) {
+  cz_stats_cha.01a <- readRDS(file = "cz_stats_cha.01a.RDS")
 }
 
-cz_stats_cha.01a <- cz_stats_cha.01 %>%   
-  mutate(clean_referrer = sub("https?://(www\\.)?(.*?/|.*?:|.*?\n)", "\\2", lg_referrer, perl=TRUE)) %>% 
-  filter(is.na(clean_referrer) | !str_detect(clean_referrer, pattern = "http")) %>% 
-  mutate(clean_referrer = gsub("(.*?/|.*?:).*", "\\1", clean_referrer, perl=TRUE),
-         clean_referrer = str_replace_all(clean_referrer, ":\\d*|/|\\.$", ""))
+# read channel info ----
+channels <- read_delim(
+  "~/Documents/chan_prep_final.csv",
+  "\t",
+  escape_double = FALSE,
+  trim_ws = TRUE
+)
 
-cz_stats_cha.01b <- cz_stats_cha.01a %>% 
-  mutate(ua_type = case_when(str_detect(lg_usr_agt, "iphone|android|mobile|ip[ao]d") & str_starts(lg_usr_agt, "mozilla|opera") ~ "mobile-web",
-                             str_detect(lg_usr_agt, "iphone|android|mobile|ip[ao]d") ~ "mobile-app",
+# update channels ----
+cz_stats_cha.02 <- cz_stats_cha.01a %>% 
+  # + filter: part of TD-3.1 ----
+  filter(lg_cz_channel %in% channels$slug) %>% # remove invalid ones
+  left_join(channels, by = c("lg_cz_channel" = "slug")) %>% 
+  select(-item, -lg_cz_channel, lg_channel = name, lg_channel_idx = id)
+
+rm(cz_stats_cha.01a)  
+rm(channels)  
+
+# + filter: part of TD-3.1 ----
+cz_stats_cha.03 <- cz_stats_cha.02 %>%   
+  mutate(clean_referrer = sub("https?://(www\\.)?(.*?/|.*?:|.*?\n)", "\\2", lg_referrer, perl=TRUE),
+         clean_referrer = gsub("(.*?/|.*?:).*", "\\1", clean_referrer, perl=TRUE),
+         clean_referrer = str_replace_all(clean_referrer, ":\\d*|/|\\.$", ""),
+         ua_type = case_when(str_detect(lg_usr_agt, "iphone|android|mobile|ipad") 
+                             & str_starts(lg_usr_agt, "mozilla|opera") ~ "mobile-web",
+                             str_detect(lg_usr_agt, "iphone|android|mobile|ipad") ~ "mobile-app",
                              str_detect(lg_usr_agt, "windows|darwin|macintosh|linux|curl|wget|python|java|gvfs")
                              & str_starts(lg_usr_agt, "mozilla|opera") ~ "desktop",
-                             str_detect(lg_usr_agt, "nsplayer|itunes|winamp|vlc") ~ "desktop",
-                             str_detect(lg_usr_agt, "play|itunes|vlc|foobar|lavf|winamp|radio|stream|apple tv|hd|tv|sonos|bose")
+                             str_detect(lg_usr_agt, "nsplayer|winamp|vlc") ~ "desktop",
+                             str_detect(lg_usr_agt, "play|itunes|vlc|foobar|lavf|winamp|radio|stream|apple tv|hd|tv|sonos|bose|ipod")
                              | !str_starts(lg_usr_agt, "mozilla|opera|internet|ices|curl|wget") ~ "smart-speaker",
                              T ~ "overig")
-         )
+         ) %>% 
+  select(-lg_referrer, lg_referrer = clean_referrer) %>% 
+  select(
+    lg_src_idx,
+    lg_ip,
+    lg_device_type = ua_type,
+    lg_channel_idx,
+    lg_channel,
+    lg_cz_ts,
+    # actually, we don need bytes; Triton uses session length
+    # lg_n_bytes,
+    lg_session_length,
+    lg_referrer,
+    lg_usr_agt
+  ) %>% 
+  arrange(lg_src_idx,
+          lg_ip,
+          lg_device_type,
+          lg_channel_idx,
+          lg_cz_ts)
 
-# get CZ theme channels
-channels <- cz_stats_cha.01 %>% select(lg_cz_channel) %>% distinct() %>% 
-  filter(!(str_detect(lg_cz_channel, 
-                      pattern = "index|status|style|server|admin|test13|\\.(jpg|ico|png)") 
-           | str_length(str_trim(lg_cz_channel)) == 0)
-         )
+rm(cz_stats_cha.02)  
 
-
-# cleaning 2 ----
-cz_stats_cha.02 <- cz_stats_cha.01 %>% 
-  # remove non-channel traffic
-  filter(lg_cz_channel %in% channels$lg_cz_channel) %>% 
-  # remove obvious bots
-  filter(!str_detect(lg_usr_agt,
-                     pattern = "(bot|crawler|spider|checker|scanner|grabber|getter|\\(null\\))[\\s_:,.;/)-]?")
-  )
-
-# infer seconds listened using 256 kBps for live-stream and 128 kBps for others
-cz_stats_cha.03 <- cz_stats_cha.02 %>% 
-  mutate(lg_secs_listened_ini = if_else(str_detect(lg_cz_channel, "\\blive\\b"), 
-                                    round(lg_n_bytes * 8 / 1024 / 256, 0), 
-                                    round(lg_n_bytes * 8 / 1024 / 128, 0)
-                                    )
-  )
-
-feb_2021 <- interval(ymd_hms("2021-02-01 00:00:00"),
-                     rollback(ymd_hms("2021-03-01 23:59:59"),
-                              preserve_hms = T),
-                     tzone = "Europe/Amsterdam")
-
-# sessions shorter than 60 seconds or longer than 24 hours are not to be considered as "listening sessions"
-cz_stats_cha.04 <- cz_stats_cha.03 %>%
-  filter(lg_secs_listened_ini > 30.0
-         & lg_cz_ts %within% feb_2021 # feb only
-  )
-
-# calculate time-attributes
-# NB - data from jan '21 are missing!
-MONTH_END <- ymd_hms("2021-03-01 00:00:00") - seconds(1)
-cz_stats.02a <- cz_stats.01a %>% 
-  mutate(lg_lstn_start = lg_cz_ts,
-         lg_lstn_stop = lg_lstn_start + seconds(lg_secs_listened_ini),
-         # adjust stop time for end-of-month
-         lg_lstn_stop_eom = if_else(lg_lstn_stop <= MONTH_END, lg_lstn_stop, MONTH_END),
-         # recalculate seconds listened after end-of-month adjustment
-         lg_secs_listened_eom = int_length(interval(lg_lstn_start, lg_lstn_stop_eom)))
-
-
-# StreamAnalyst Tuning Hours
-SATH <- 188061
-
-# Teamservice Tuning hours
-TTA <- sum(cz_stats.02a1$lg_secs_listened_eom) / 3600
-
-# StreamAnalyst Tuning Hours Adjustment (SATHA) 
-SATHA <- SATH / TTA
-
-# match Teamservice results to StreamAnalyst results 
-cz_stats.02a2 <- cz_stats.02a1 %>% mutate(lg_secs_listened = lg_secs_listened_eom * SATHA)
-
-# recalculate time-attributes
-cz_stats.03 <- cz_stats.02a2 %>% 
-  mutate(lg_lstn_stop = lg_lstn_start + seconds(lg_secs_listened),
-         lg_lstn_stop_eom = if_else(lg_lstn_stop <= MONTH_END, lg_lstn_stop, MONTH_END),
-         lg_lstn_stop_bin = lg_lstn_stop_eom)
-
-minute(cz_stats.02a2$lg_lstn_start_bin) <- 0
-second(cz_stats.02a2$lg_lstn_start_bin) <- 0
-hour(cz_stats.02a2$lg_lstn_start_bin) <- case_when(hour(cz_stats.02a2$lg_lstn_start) < 6 ~ 3,
-                                                   hour(cz_stats.02a2$lg_lstn_start) < 12 ~ 9,
-                                                   hour(cz_stats.02a2$lg_lstn_start) < 18 ~ 15,
-                                                   T ~ 21)
-
-minute(cz_stats.02a2$lg_lstn_stop_bin) <- 0
-second(cz_stats.02a2$lg_lstn_stop_bin) <- 0
-hour(cz_stats.02a2$lg_lstn_stop_bin) <- case_when(hour(cz_stats.02a2$lg_lstn_stop) < 6 ~ 3,
-                                              hour(cz_stats.02a$lg_lstn_stop) < 12 ~ 9,
-                                              hour(cz_stats.02a$lg_lstn_stop) < 18 ~ 15,
-                                              T ~ 21)
-
-bin_size <- 6 * 60 * 60 # n_secs in 6 hours
-
-cz_stats.02b <- cz_stats.02a %>% 
-  mutate(lg_n_bins = 1 + int_length(lg_lstn_start_bin %--% lg_lstn_stop_bin) / bin_size,
-         lg_secs_listened_by_bin = round(lg_secs_listened / lg_n_bins, 0),
-         lg_bin_start_date = date(lg_lstn_start_bin),
-         lg_bin_start_idx = 1 + (hour(lg_lstn_start_bin) - 3) / 6)
-
-cz_stats.03 <- cz_stats.02b %>%
-  group_by(lg_bin_start_date) %>%
-  summarise(n_sessions = n())
-
-write_delim(cz_stats.03, delim = "\t", file = "cz_stats_n_sessions.tsv")
-
-cz_stats.04 <- cz_stats.02b %>%
-  group_by(lg_bin_start_date) %>%
-  summarise(n_hrs_listened = sum(lg_secs_listened) / 3600.0)
-
-write_delim(cz_stats.04, delim = "\t", file = "cz_stats_hrs_listened.tsv")
- 
-cz_curl <- "curl 'https://freegeoip.app/json/208.94.246.226' \
-  -H 'authority: freegeoip.app' \
-  -H 'dnt: 1' \
-  -H 'upgrade-insecure-requests: 1' \
-  -H 'user-agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:87.0) Gecko/20100101 Firefox/87.0' \
-  -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
-  -H 'sec-fetch-site: none' \
-  -H 'sec-fetch-mode: navigate' \
-  -H 'sec-fetch-user: ?1' \
-  -H 'sec-fetch-dest: document' \
-  -H 'accept-language: nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7' \
-  -H 'cookie: __cfduid=de21a991dc201214c6f5e3971f1d930621616846464' \
-  --compressed  "
-
-cz_straight <- straighten(cz_curl)
-
-cz_res <- make_req(cz_straight, add_clip = F)
-
-cz_geo <- toJSON(content(cz_res[[1]](), as="parsed"), auto_unbox = TRUE, pretty=TRUE)
-# 
+saveRDS(cz_stats_cha.03, file = "cz_stats_cha.03.RDS")

@@ -16,29 +16,53 @@ if (!exists(x = "cz_stats_cha")) {
   cz_stats_cha <- readRDS(file = "cz_stats_cha.RDS")
 }
 
-# feb_2021 <- interval(ymd_hms("2021-02-01 00:00:00"), 
-#                      rollback(ymd_hms("2021-03-01 23:59:59"), 
-#                               preserve_hms = T), 
-#                      tzone = "Europe/Amsterdam")
-
-# cleaning 1 ----
+# + filter: part of TD-3.1 ----
 cz_stats_cha.01 <- cz_stats_cha %>%
-  filter(lg_ip != "a" # remove dummy
-         & lg_http_req != "c" # remove dummy
+  filter(lg_data_src != "s" # remove artefact
          & !is.na(lg_http_req) # non-empty http-requests only
-         # & lg_cz_ts %within% feb_2021 # feb only
-         & lg_http_resp_sts == "200" # valid http-response
-         & !is.na(lg_usr_agt) # non-empty user-agents only
+         & lg_http_resp_sts == "200" # valid http-responses only
   ) %>%
   # split http-request
   separate(lg_http_req, 
            into = c("lg_http_cmd", "lg_cz_channel", "lg_http_protocol"), 
-           sep = " ") %>%
+           sep = " "
+  ) %>% 
   # drop redundant columns
-  select(-lg_http_cmd, -lg_http_protocol, -lg_http_resp_sts) %>%
-  # clean-up channel names & bytes
-  mutate(lg_cz_channel = str_replace_all(lg_cz_channel, pattern = "/", replacement = ""),
-         lg_n_bytes = as.numeric(lg_n_bytes))
+  select(-lg_http_cmd, -lg_http_protocol, -lg_http_resp_sts
+  ) %>% 
+  # clean-up channel names
+  mutate(lg_cz_channel = str_replace_all(lg_cz_channel, pattern = "/|\\.m3u|\\.xspf", replacement = ""),
+         # bytes should be numbers to do arithmetic
+         lg_n_bytes = as.numeric(lg_n_bytes),
+         # create data source index for sorting properly
+         lg_src_idx = as.integer(str_replace_all(lg_data_src, "access\\.log\\.", "")),
+         # session lengths should be numeric to do arithmetic
+         lg_session_length_clean = str_replace_all(lg_session_length, "[^0-9]", ""),
+         lg_session_length = if_else(str_length(lg_session_length_clean) > 0,
+                                     as.integer(lg_session_length_clean),
+                                     0L)
+  )
 
-saveRDS(cz_stats_cha.01, "cz_stats_cha.01.RDS")
+rm(cz_stats_cha)
 
+cz_stats_cha.01a <- cz_stats_cha.01 %>% 
+  select(
+    lg_src_idx,
+    lg_ip,
+    lg_cz_ts,
+    lg_cz_channel,
+    lg_usr_agt,
+    lg_referrer,
+    lg_n_bytes,
+    lg_session_length
+  ) %>% 
+  arrange(lg_src_idx,
+          lg_ip,
+          lg_cz_ts,
+          lg_cz_channel,
+          lg_usr_agt
+  )
+
+rm(cz_stats_cha.01)
+
+saveRDS(cz_stats_cha.01a, "cz_stats_cha.01a.RDS")
