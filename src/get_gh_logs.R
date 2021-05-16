@@ -35,17 +35,11 @@ gh_logs <-
 
 # prep the list ----
 gh_logs_tib.a <- gh_logs %>% 
-  mutate(l_row_clean = str_squish(value), 
-         l_row_clean = str_split(l_row_clean, pattern = " ", n = 8)) %>% 
-  select(-value)
-
-suppressMessages(
-  gh_logs_tib.b <- unnest_wider(data = gh_logs_tib.a, col = l_row_clean)
-)
-
-names(gh_logs_tib.b) <- paste0("itm_", 1:8)
-
-gh_logs_tib.c <- gh_logs_tib.b %>% 
+  mutate(l_row_clean = str_squish(value)) %>%
+  select(-value) %>% 
+  separate(l_row_clean, into = paste0("itm_", 1:8), sep = " ") 
+  
+gh_logs_tib.c <- gh_logs_tib.a %>% 
   mutate(lg_run_ymd = gh_log_run_ymd) %>% 
   select(lg_ymd = itm_6, lg_hms = itm_7, lg_size = itm_5, lg_name = itm_8, lg_run_ymd) %>% 
   arrange(lg_ymd, lg_hms, lg_run_ymd)
