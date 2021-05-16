@@ -18,7 +18,7 @@ gh_log_run_ymd = now(tzone = "Europe/Amsterdam")
 # load log history ----
 gh_logs_his <- read_rds(file = "/home/lon/Documents/cz_streaming_logs/gh_logs_history/gh_logs_his.RDS")
 
-gh_logs_his %<>% filter(lg_ymd == "2021-04-13")
+# gh_logs_his %<>% filter(lg_ymd == "2021-04-13")
 
 # + connect to greenhost ----
 gh_sess <- ssh_connect("cz@streams.greenhost.nl")
