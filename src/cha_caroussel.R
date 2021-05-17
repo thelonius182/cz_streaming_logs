@@ -112,7 +112,7 @@ cha_audio_full.1 <- cha_audio_full %>%
          & str_detect(key_tk.3m, "\\d{2}")
          & str_detect(key_tk.3d, "\\d{2}")
          & str_detect(key_tk.3hh, "\\d{2}")
-         & str_detect(key_tk.3mm, "00|59|58|30|29")
+         & str_detect(key_tk.3mm, "00|01|02|03|59|58|57|32|31|30|29|28")
   )
 
 cha_audio_full.2 <- cha_audio_full.1 %>% 
@@ -134,6 +134,8 @@ cha_audio_full.3 <- cha_audio_full.2 %>%
 # append gh-dirs ----
 themakanalen_listed.1 <- themakanalen_listed %>% 
   mutate(cha_dir = path_dir(url),
+         cha_dir = str_replace(cha_dir, "http:/streams.greenhost.nl", ""),
+         cha_dir = str_replace(cha_dir, "https://cgi.omroep.nl/cgi-bin/streams?", ""),
          cha_dir = if_else(str_starts(cha_dir, "/"), cha_dir, paste0("/", cha_dir)),
          cha_dir = str_replace(cha_dir, "cz/cz/rod", "cz_rod")
   ) %>% 
@@ -153,7 +155,7 @@ themakanalen_listed.2 <- themakanalen_listed.1 %>%
          & str_detect(key_tk.3m, "\\d{2}")
          & str_detect(key_tk.3d, "\\d{2}")
          & str_detect(key_tk.3hh, "\\d{2}")
-         & str_detect(key_tk.3mm, "00|59|58|30|29")
+         & str_detect(key_tk.3mm, "00|01|02|03|59|58|57|32|31|30|29|28")
   )
 
 themakanalen_listed.3 <- themakanalen_listed.2 %>% 
@@ -173,6 +175,47 @@ themakanalen_listed.4 <- themakanalen_listed.3 %>%
          everything(),
          -starts_with("key_tk.")
   )
-  
 
-caroussel.1 <- themakanalen_listed.4 %>% left_join(cha_audio_full.3)
+caroussel.1 <- themakanalen_listed.4 %>% 
+  left_join(cha_audio_full.3) %>% 
+  filter(!is.na(audio_size)) %>% 
+  select(-cupro)
+
+# remove hijack errors
+caroussel.2 <- caroussel.1 %>% 
+  group_by(key_tk_ymd, key_tk_dir, channel) %>%
+  mutate(pgm_seq_nbr = row_number()) %>% 
+  ungroup() %>% 
+  mutate(pgm_nbr = row_number())
+
+double_track_ids <- caroussel.2 %>% filter(pgm_seq_nbr == 2) %>% select(pgm_id)
+
+double_tracks <- caroussel.2 %>% 
+  filter(pgm_id %in% double_track_ids$pgm_id) %>% 
+  filter(!str_detect(audio_file, "00\\.mp3$"))
+  
+caroussel.3 <- caroussel.2 %>% 
+  filter(!pgm_nbr %in% double_tracks$pgm_nbr) %>% 
+  select(-pgm_seq_nbr, -key_tk_ymd, -key_tk_dir, -url, -audio_file, audio_bytes = audio_size) %>% 
+  select(pgm_nbr, everything())
+
+caroussel.4 <- caroussel.3 %>% 
+  mutate(pgm_secs = time_length(interval(pgm_start, pgm_stop), unit = "second"),
+         audio_secs_128 = audio_bytes * 8 / 1024 / 128,
+         audio_secs_160 = audio_bytes * 8 / 1024 / 160,
+         audio_secs_192 = audio_bytes * 8 / 1024 / 192,
+         audio_secs_256 = audio_bytes * 8 / 1024 / 256,
+         audio_secs_128_diff = abs(pgm_secs - audio_secs_128),
+         audio_secs_160_diff = abs(pgm_secs - audio_secs_160),
+         audio_secs_192_diff = abs(pgm_secs - audio_secs_192),
+         audio_secs_256_diff = abs(pgm_secs - audio_secs_256)
+  ) %>% 
+  rowwise() %>% 
+  mutate(min_diff = min(c_across(ends_with("diff")))) %>% 
+  # differences of more than 20 minutes indicate invalid data
+  filter(min_diff < 1200) 
+
+caroussel.5 <- caroussel.4 %>% 
+  select(pgm_nbr:pgm_id, pgm_secs_sched = pgm_secs) %>% 
+  mutate(pgm_secs_calc = if_else(stop == 0, pgm_secs_sched - start, stop - start)) %>% 
+  select(-start, -stop, -pgm_secs_sched, pgm_secs = pgm_secs_calc)
