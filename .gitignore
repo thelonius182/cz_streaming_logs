@@ -50,3 +50,6 @@ gh_logs.tsv
 cha_audio_full.RDS
 gh_cha_dirs.tsv
 caroussel_missing.tsv
+caroussel.RDS
+caroussel_7.RDS
+config.yaml
