@@ -114,11 +114,6 @@ stage_caroussel <- function() {
   
   fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_cha_log")
   
-  # get all channel playlists ----
-  # source: query on Nipper, exported as .csv
-  # C:\Users\nipper\Documents\cz_queries\themakanalen_2.sql
-  themakanalen_listed_raw <- read_csv("~/Downloads/themakanalen_listed.csv")
-  
   themakanalen_listed <- themakanalen_listed_raw %>% 
     filter(!is.na(url) & !is.na(pgm_start))
   
@@ -128,19 +123,13 @@ stage_caroussel <- function() {
            cha_dir = if_else(str_starts(cha_dir, "/"), cha_dir, paste0("/", cha_dir))
     ) %>% 
     select(cha_dir) %>% 
-    # filter(!str_starts(cha_dir, "/ht") & !str_detect(cha_dir, "portal")
-    # ) %>% 
     mutate(cha_dir = paste0("/srv/audio", cha_dir),
            # files in cz/cz/rod are symlinks to cz_rod. Dereference it first.
            cha_dir = if_else(cha_dir == "/srv/audio/cz/cz/rod", "/srv/audio/cz_rod", cha_dir)) %>% 
     group_by(cha_dir) %>% 
     mutate(n = n()) %>% 
     distinct() %>% 
-    # filter(!str_detect(cha_dir, "/srv/audio/radio6/cz/(nachten|%s)")
-    # ) %>% 
     arrange(cha_dir)
-  
-  # write_delim(gh_cha_dirs, file = "gh_cha_dirs.tsv", delim = "\t")
   
   cha_audio_full <- NULL
   
@@ -194,8 +183,7 @@ stage_caroussel <- function() {
   # disconnect from greenhost ----
   ssh_disconnect(session = gh_sess)
   
-  # saveRDS(cha_audio_full, "cha_audio_full.RDS")
-  
+  # clean up audio info ----
   cha_audio_full.1 <- cha_audio_full %>% 
     mutate(key_tk_listed = str_replace(paste0(gh_src_dir, "/", itm_8), "/srv/audio", ""),
            key_tk_listed = str_replace(key_tk_listed, "-", "_"),
@@ -218,16 +206,17 @@ stage_caroussel <- function() {
            & str_detect(key_tk.3mm, "00|01|02|03|59|58|57|32|31|30|29|28")
     )
   
+  # more cleaning...
   cha_audio_full.2 <- cha_audio_full.1 %>% 
     mutate(key_tk.2_ymd = ymd_hm(paste0(key_tk.3y, "-",
                                         key_tk.3m, "-", 
                                         key_tk.3d, " ", 
                                         key_tk.3hh, ":",
-                                        key_tk.3mm)
-    ),
-    key_tk.2_ymd_rnd = round_date(key_tk.2_ymd, unit = "30 minutes")
+                                        key_tk.3mm)),
+           key_tk.2_ymd_rnd = round_date(key_tk.2_ymd, unit = "30 minutes")
     )
   
+  # final cleaning....
   cha_audio_full.3 <- cha_audio_full.2 %>% 
     select(key_tk_ymd = key_tk.2_ymd_rnd,
            key_tk_dir = key_tk.1,
@@ -244,6 +233,7 @@ stage_caroussel <- function() {
     ) %>% 
     filter(!str_detect(url, "wma$")) 
   
+  # clean up themakanaal info ----
   themakanalen_listed.2 <- themakanalen_listed.1 %>% 
     mutate(
       key_tk.2 = str_replace(path_file(url), "\\.mp3", ""),
@@ -261,6 +251,7 @@ stage_caroussel <- function() {
            & str_detect(key_tk.3mm, "00|01|02|03|59|58|57|32|31|30|29|28")
     )
   
+  # more cleaning ...
   themakanalen_listed.3 <- themakanalen_listed.2 %>% 
     mutate(key_tk.2_ymd = ymd_hm(paste0(key_tk.3y, "-",
                                         key_tk.3m, "-",
@@ -279,12 +270,13 @@ stage_caroussel <- function() {
            -starts_with("key_tk.")
     )
   
+  # build theme channels caroussel by joining theme channel-info and audio-info
   caroussel.1 <- themakanalen_listed.4 %>% 
     left_join(cha_audio_full.3) %>% 
     filter(!is.na(audio_size)) %>% 
     select(-cupro)
   
-  # remove hijack errors
+  # remove hijack cutting errors
   caroussel.2 <- caroussel.1 %>% 
     group_by(key_tk_ymd, key_tk_dir, channel) %>%
     mutate(pgm_seq_nbr = row_number()) %>% 
@@ -302,6 +294,7 @@ stage_caroussel <- function() {
     select(-pgm_seq_nbr, -key_tk_ymd, -key_tk_dir, -url, -audio_file, audio_bytes = audio_size) %>% 
     select(pgm_nbr, everything())
   
+  # infer audio length from bitrate
   caroussel.4 <- caroussel.3 %>% 
     mutate(pgm_secs = time_length(interval(pgm_start, pgm_stop), unit = "second"),
            audio_secs_128 = audio_bytes * 8 / 1024 / 128,
@@ -325,13 +318,6 @@ stage_caroussel <- function() {
     # remove invalid entries
     filter(pgm_secs > 1000)
   
-  cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms.csv"
-  cur_pgms_snapshot <- read_csv(cur_pgms_snapshot_filename)
-  
-  tc_cur_pgms <- cur_pgms_snapshot %>% 
-    select(channel, current_program) %>% 
-    mutate(cp_snap_ts = file_info(cur_pgms_snapshot_filename)$modification_time)
-  
   caroussel.6 <- caroussel.5 %>% 
     left_join(tc_cur_pgms, by = c("channel" = "channel", "pgm_id" = "current_program")) %>% 
     group_by(channel) %>% 
@@ -343,4 +329,70 @@ stage_caroussel <- function() {
   saveRDS(caroussel.6, "caroussel.RDS")
   
   return(caroussel.6)
+}
+
+analyze_log <- function(logfile) {
+  # logfile <- "/home/lon/Documents/cz_streaming_logs/access.log.7"
+  flog.info(paste0("log file: ", logfile), name = "cz_stats_cha_log")
+  
+  # inlezen ----  
+  suppressMessages(
+    access_log <- read_delim(
+      logfile,
+      "\t",
+      escape_double = FALSE,
+      col_names = FALSE,
+      trim_ws = TRUE, 
+    )
+  )
+  
+  # Clean it up
+  # + part of TD-3.1 ----
+  Encoding(access_log$X1) <- "UTF-8"
+  access_log$X1 <- iconv(access_log$X1, "UTF-8", "UTF-8", sub = '') 
+  
+  # Split it up
+  suppressWarnings(
+    cz_log.1 <- access_log %>%
+      mutate(
+        lg_data_src = path_file(logfile),
+        details = gsub('("[^"\r\n]*")? (?![^" \r\n]*"$)', "\\1¶", X1, perl = TRUE)
+      ) %>%
+      separate(
+        col = details,
+        into = paste0("fld", 1:11),
+        sep = "¶"
+      )
+  )
+  
+  cz_log.2 <- cz_log.1 %>% 
+    mutate() %>% 
+    mutate(lg_ip = fld1, 
+           cz_ts_raw = str_replace_all(fld4, "[\\[\\] +-]|0200|0100", ""), 
+           lg_cz_ts = dmy_hms(cz_ts_raw, tz = "Europe/Amsterdam"),
+           lg_http_req = str_replace_all(fld6, "[\"]", ""), 
+           lg_http_resp_sts = fld7,
+           lg_n_bytes = as.numeric(fld8), 
+           lg_referrer = str_replace_all(fld9, "[\"]", ""), 
+           lg_referrer = str_replace_all(lg_referrer, "-", NA_character_),
+           lg_usr_agt = str_replace_all(fld10, "[\"]", ""),
+           lg_usr_agt = str_replace_all(lg_usr_agt, "-", NA_character_),
+           lg_usr_agt = str_to_lower(lg_usr_agt),
+           lg_session_length = fld11
+    ) %>% 
+    select(
+      lg_data_src,
+      lg_ip,
+      lg_usr_agt,
+      lg_cz_ts,
+      lg_http_req,
+      lg_http_resp_sts,
+      lg_referrer,
+      lg_n_bytes,
+      lg_session_length
+    ) 
+  
+  rm(cz_log.1, access_log)
+  
+  return(cz_log.2)
 }

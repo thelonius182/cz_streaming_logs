@@ -1,21 +1,15 @@
-library(magrittr)
-library(tidyr)
-library(dplyr)
-library(stringr)
-library(readr)
-library(lubridate)
-library(fs)
-library(futile.logger)
-library(ssh)
-library(yaml)
+# library(magrittr)
+# library(tidyr)
+# library(dplyr)
+# library(stringr)
+# library(readr)
+# library(lubridate)
+# library(fs)
+# library(futile.logger)
+# library(ssh)
+# library(yaml)
 
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_cha_log")
-
-config <- read_yaml("config.yaml")
-
-source("src/prep_funcs.R", encoding = "UTF-8")
-
-caroussel <- NULL
 
 if (file_exists("caroussel.RDS")) {
   caroussel <- readRDS("caroussel.RDS")
@@ -23,25 +17,21 @@ if (file_exists("caroussel.RDS")) {
   caroussel <- stage_caroussel()
 }
 
-# adjust for test: set snap_ts to feb '21
-month(caroussel$cp_snap_ts) <- 2
-
 cha_cur_pgms <- caroussel %>% 
   group_by(cha_id) %>% 
   mutate(cha_idx_max = max(cha_idx)) %>% 
   filter(!is.na(cp_snap_ts))
 
-tc_interval_ym <- cha_cur_pgms$cp_snap_ts[1]
-day(tc_interval_ym) <- 1L
-hour(tc_interval_ym) <- 0L
-minute(tc_interval_ym) <- 0L
-second(tc_interval_ym) <- 0L
-tc_interval_start <- tc_interval_ym - days(1)
-tc_interval_stop <- tc_interval_ym + months(1) + days(1)
+
+# # # # # # #   T E S T   O N L Y   # # # # # # # 
+# adjust for test: set snap_ts to feb '21
+month(cha_cur_pgms$cp_snap_ts) <- 2
+# # # # # # #   T E S T   O N L Y   # # # # # # # 
+
 
 cur_cha_new <-  NULL
 
-# infer intervals V2 ----
+# infer intervals ----
 for (a_cur_cha_id in cha_cur_pgms$cha_id) {
   
   # init ----
@@ -98,7 +88,15 @@ for (a_cur_cha_id in cha_cur_pgms$cha_id) {
   }
 }
 
-caroussel.7 <- cur_cha_new %>% arrange(cha_id, track_start)
+# adjust stop time ----
+# if a pgm stops TOTH, make it stop 1 second earlier to facilitate splitting by hour later on
+caroussel.7 <- cur_cha_new %>% 
+  mutate(stop_toth = if_else(minute(track_stop) == 0 & second(track_stop) == 0, T, F),
+         track_stop = if_else(stop_toth, track_stop - seconds(1L), track_stop),
+         pgm_secs = if_else(stop_toth, pgm_secs - 1L, pgm_secs)
+  ) %>% 
+  arrange(cha_id, track_start)
 
 saveRDS(caroussel.7, "caroussel_7.RDS")
 
+rm(caroussel, cur_cha_new)
