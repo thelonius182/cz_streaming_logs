@@ -27,16 +27,16 @@ if (file_exists(cz_rod_done_path)) {
 # if new files arrived ----
 if (nrow(cz_log_files) > 0) {
   
-  cz_stats_rod.1 = NULL
+  cz_stats_rod.01 = NULL
   
   for (a_path in cz_log_files$value) {
     # a_path <- "/home/lon/Documents/cz_streaming_logs/R_20210518_204228/access.log.9"
     ana_single <- analyze_rod_log(a_path)
     
-    if (is.null(cz_stats_rod.1)) {
-      cz_stats_rod.1 <- ana_single
+    if (is.null(cz_stats_rod.01)) {
+      cz_stats_rod.01 <- ana_single
     } else {
-      cz_stats_rod.1 %<>% bind_rows(ana_single)
+      cz_stats_rod.01 %<>% bind_rows(ana_single)
     }
     
     cz_rod_current <- tibble(rod_path = a_path)
@@ -55,5 +55,7 @@ if (nrow(cz_log_files) > 0) {
   
   rm(ana_single)
   
-  saveRDS(cz_stats_rod.1, file = "cz_stats_rod.1.RDS")
+  write_rds(x = cz_stats_rod.01, 
+            file = "cz_stats_rod.01.RDS",
+            compress = "gz")
 }
