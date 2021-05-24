@@ -61,7 +61,7 @@ month(tc_cur_pgms$cp_snap_ts) <- 2
 # # # # # # #   T E S T   O N L Y   # # # # # # # 
 
 
-# gather log files ----
+# gather streaming log files ----
 # stored in /home/lon/Documents/cz_streaming_logs/L_* ("logs Themakanalen + Live-stream")
 # result: cz_stats_cha
 # tibble(
@@ -110,4 +110,8 @@ source("src/prep7.R", encoding = "UTF-8")
 # join live-pgms ----
 # result: cz_stats_cha.08
 source("src/prep8.R", encoding = "UTF-8")
+
+# gather RoD log files ----
+# result: cz_stats_rod.01
+source("src/prep_rod1.R", encoding = "UTF-8")
 

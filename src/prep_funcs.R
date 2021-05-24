@@ -396,3 +396,82 @@ analyze_log <- function(logfile) {
   
   return(cz_log.2)
 }
+
+analyze_rod_log <- function(logfile) {
+  # logfile <- "/home/lon/Documents/cz_streaming_logs/R_20210518_204228/access.log.9"
+  
+  flog.info(paste0("log file: ", logfile), name = "cz_stats_rod_log")
+  
+  # inlezen ----  
+  suppressMessages(
+    rod_log <- read_delim(
+      logfile,
+      "\t",
+      escape_double = FALSE,
+      col_names = FALSE,
+      trim_ws = TRUE, 
+    )
+  )
+  
+  # + part of TD-3.1 ----
+  Encoding(rod_log$X1) <- "UTF-8"
+  rod_log$X1 <- iconv(rod_log$X1, "UTF-8", "UTF-8", sub = '')
+  
+  # clean it up & split ----
+  tomcat_log_pattern <- gregexpr(pattern = '^(?<client>\\S+) (?<auth>\\S+ \\S+) \\[(?<datetime>[^]]+)\\] "(?:GET|POST|HEAD) (?<file>[^ ?"]+)\\??(?<parameters>[^ ?"]+)? HTTP/[0-9.]+" (?<status>[0-9]+) (?<size>[-0-9]+) "(?<referrer>[^"]*)" "(?<useragent>[^"]*)"$', 
+                                 text = rod_log$X1, 
+                                 perl = TRUE)
+  rod_log_items <- lapply(tomcat_log_pattern, function(m) attr(m, "capture.start")[,1:9])
+  
+  for (i1 in seq_along(rod_log_items)) {
+    attr(rod_log_items[[i1]], "match.length") <- attr(tomcat_log_pattern[[i1]], "capture.length")[,1:9]
+  }
+  
+  rod_log_item_list <- regmatches(rod_log$X1, rod_log_items) 
+  rod_log_item_list_names <- vector("list", length(rod_log_item_list))
+  rod_log_item_list_values <- vector("list", length(rod_log_item_list))
+  
+  for (i1 in seq_along(rod_log_item_list)) {
+    
+    for (j1 in seq_along(rod_log_item_list[[i1]])) {
+      rod_log_item_list_names[[i1]][j1] <- rod_log_item_list[[i1]][j1] %>% names()
+      rod_log_item_list_values[[i1]][j1] <- rod_log_item_list[[i1]][j1] %>% paste(collapse = "")
+    }
+    
+  }
+  
+  log_item_names <- rod_log_item_list_names %>% unlist() %>% as_tibble()
+  names(log_item_names) <- "log_item_name"
+  log_item_values <- rod_log_item_list_values %>% unlist() %>% as_tibble()
+  names(log_item_values) <- "log_item_value"
+  log_item_nvp <- bind_cols(log_item_names, log_item_values) %>%
+    mutate(nvp_idx = if_else(log_item_name == "client", row_number(), NA_integer_)) %>% 
+    fill(nvp_idx, .direction = "down")
+  
+  cz_log.1 <- log_item_nvp %>%
+    pivot_wider(names_from = log_item_name,
+                values_from = log_item_value) %>%
+    filter(str_detect(file, "[.]mp3")) %>%
+    mutate(lg_ts = dmy_hms(datetime, tz = "Europe/Amsterdam", quiet = T)) %>%
+    select(
+      lg_ipa = client,
+      lg_ts,
+      lg_audio_file = file,
+      lg_sts = status,
+      lg_size = size,
+      lg_ref = referrer,
+      lg_usr_agt = useragent,-nvp_idx,-auth,-parameters,-datetime
+    ) %>%
+    filter(lg_sts %in% c("200", "206")) %>%
+    mutate(
+      lg_size = as.numeric(lg_size),
+      lg_ref = gsub("(?:.*//)([^/]*)/.*", "\\1", lg_ref, perl = TRUE),
+      lg_usr_agt = str_to_lower(lg_usr_agt)
+    ) %>%
+    select(starts_with("lg_"))
+  
+  rm(log_item_names, log_item_nvp, log_item_values, rod_log, rod_log_item_list,
+     rod_log_item_list_names, rod_log_item_list_values, rod_log_items, tomcat_log_pattern)
+  
+  return(cz_log.1)
+}
