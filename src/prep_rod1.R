@@ -24,7 +24,7 @@ if (file_exists(cz_rod_done_path)) {
   cz_log_files %<>% anti_join(cz_rod_done, by = c("value" = "rod_path"))
 }
 
-# if new files arrived ----
+# if new files have arrived ----
 if (nrow(cz_log_files) > 0) {
   
   cz_stats_rod.01 = NULL
