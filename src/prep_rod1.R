@@ -30,7 +30,7 @@ if (nrow(cz_log_files) > 0) {
   cz_stats_rod.01 = NULL
   
   for (a_path in cz_log_files$value) {
-    # a_path <- "/home/lon/Documents/cz_streaming_logs/R_20210518_204228/access.log.9"
+    a_path <- "/home/lon/Documents/cz_streaming_logs/R_20210609_232631/access.log.4"
     ana_single <- analyze_rod_log(a_path)
     
     if (is.null(cz_stats_rod.01)) {
