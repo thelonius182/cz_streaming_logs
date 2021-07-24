@@ -212,7 +212,8 @@ stage_caroussel <- function() {
                                         key_tk.3m, "-", 
                                         key_tk.3d, " ", 
                                         key_tk.3hh, ":",
-                                        key_tk.3mm)),
+                                        key_tk.3mm),
+                                 tz = "Europe/Amsterdam"),
            key_tk.2_ymd_rnd = round_date(key_tk.2_ymd, unit = "30 minutes")
     )
   
@@ -475,3 +476,4 @@ analyze_rod_log <- function(logfile) {
   
   return(cz_log.1)
 }
+

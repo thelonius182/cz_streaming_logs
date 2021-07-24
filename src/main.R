@@ -19,6 +19,7 @@ suppressPackageStartupMessages(library(curlconverter))
 suppressPackageStartupMessages(library(jsonlite))
 suppressPackageStartupMessages(library(httr))
 suppressPackageStartupMessages(library(yaml))
+suppressPackageStartupMessages(library(ssh))
 
 # init logger ----
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_cha_log")
@@ -27,7 +28,7 @@ fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_s
 source("src/prep_funcs.R", encoding = "UTF-8")
 
 # get live pgms ----
-# Built by query on Nipper, exported as .csv
+# Built by query on Nipper-pc, exported as .csv
 # C:\Users\nipper\Documents\cz_queries\oorboekje.sql
 live_stream_pgms_raw <- read_csv("~/Downloads/live_stream_pgms.csv",
                                  col_types = cols(cz_id = col_integer(),
@@ -37,15 +38,15 @@ live_stream_pgms_raw <- read_csv("~/Downloads/live_stream_pgms.csv",
                                  )
 )
 
-# get channel playlists ----
-# Built by query on Nipper, exported as .csv
+# get theme channel (TC) playlists ----
+# Built by query on Nipper-pc, exported as .csv
 # C:\Users\nipper\Documents\cz_queries\themakanalen_2.sql
 suppressWarnings(
   themakanalen_listed_raw <- read_csv("~/Downloads/themakanalen_listed.csv")
 )
 
 # get current TC-programs ----
-# Built by query on Nipper, exported as .csv
+# Built by query on Nipper-pc, exported as .csv
 # C:\Users\nipper\Documents\cz_queries\themakanalen.sql
 cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms.csv"
 cur_pgms_snapshot <- read_csv(cur_pgms_snapshot_filename)
@@ -114,4 +115,3 @@ source("src/prep8.R", encoding = "UTF-8")
 # gather RoD log files ----
 # result: cz_stats_rod.01
 source("src/prep_rod1.R", encoding = "UTF-8")
-
