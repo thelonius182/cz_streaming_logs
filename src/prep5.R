@@ -17,6 +17,7 @@ if (!exists(x = "cz_stats_cha.04")) {
 }
 
 # create clean frgments ----
+# itvl: "interval"
 itvl01 <- cz_stats_cha.04 %>% 
   group_by(lg_ip, lg_device_type,lg_channel_id) %>% 
   mutate(lg_grp_idx = row_number()) %>% 

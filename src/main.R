@@ -115,3 +115,12 @@ source("src/prep8.R", encoding = "UTF-8")
 # gather RoD log files ----
 # result: cz_stats_rod.01
 source("src/prep_rod1.R", encoding = "UTF-8")
+
+tmp_titles <- cz_stats_rod.10 %>% select(cz_title) %>% distinct()
+
+tmp_titles_cha <- cz_stats_cha_08 %>% select(pgm_title, cz_cha_id, cha_name, cz_length) %>% 
+  group_by(pgm_title, cz_cha_id, cha_name) %>% 
+  summarise(sum_seconds = sum(cz_length)) %>% 
+  mutate(sum_hours = round(sum_seconds / 3600, 1))
+
+tmp_channels <- cz_stats_cha_08 %>% select(cz_cha_id, cha_name) %>% filter(is.na(cha_name)) %>% distinct()

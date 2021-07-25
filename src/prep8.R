@@ -89,7 +89,20 @@ cz_stats_cha_07_live <- cz_stats_cha_07 %>%
 cz_stats_cha_07_tc <- cz_stats_cha_07 %>% 
   filter(cz_cha_id != 0)
 
-cz_stats_cha_08 <- cz_stats_cha_07_live %>% 
+cz_stats_cha_08a <- cz_stats_cha_07_live %>% 
   bind_rows(cz_stats_cha_07_tc)
+
+# read channel info ----
+channels <- read_delim(
+  "~/Documents/chan_prep_final.csv",
+  "\t",
+  escape_double = FALSE,
+  trim_ws = TRUE
+)
+
+cz_stats_cha_08 <- cz_stats_cha_08a %>% 
+  inner_join(channels, by = c("cz_cha_id" = "id")) %>% 
+  select(-item, -slug, -cha_name, cha_name = name) %>% 
+  distinct()
 
 saveRDS(cz_stats_cha_08, "cz_stats_cha_08.RDS")

@@ -32,42 +32,152 @@ if (!exists("cz_audio")) {
   flog.info("reusing DF cz_audio.1", name = "cz_stats_rod_log")
 }
 
-log_audio.1 <- rod_logs %>% 
+cz_stats_rod.1 <- rod_logs %>% 
   inner_join(cz_audio, by = c("lg_pgmkey" = "key_tk_ymd")) %>% 
   select(lg_ipa, lg_usr_agt, lg_pgmkey, lg_ts, lg_sts, lg_size, audio_size, everything()) 
 
-log_audio.2 <- log_audio.1 %>% 
+cz_stats_rod.2 <- cz_stats_rod.1 %>% 
   inner_join(cz_gids, by = c("lg_pgmkey" = "pgm_start")) %>% 
-  mutate(pgm_minutes = as.numeric(interval(lg_pgmkey, pgm_stop), "minutes"))
+  mutate(pgm_seconds = as.numeric(interval(lg_pgmkey, pgm_stop), "seconds"))
 
-log_audio.3 <- log_audio.2 %>% 
-  mutate(tmp_bytes_per_minute = audio_size / pgm_minutes,
-         tmp_frag_minutes = lg_size / tmp_bytes_per_minute) 
+cz_stats_rod.3 <- cz_stats_rod.2 %>% 
+  mutate(tmp_bps = audio_size / pgm_seconds,
+         tmp_frag_seconds = lg_size / tmp_bps) 
 
-log_audio.4 <- log_audio.3 %>% 
+cz_stats_rod.4 <- cz_stats_rod.3 %>% 
   group_by(lg_ipa, lg_usr_agt, lg_pgmkey) %>% 
   summarize(bc_key = row_number(),
-            tmp_total_minutes = sum(tmp_frag_minutes)) %>% 
-  mutate(tmp_total_minutes = round(tmp_total_minutes, 0)) %>% 
+            tmp_total_seconds = sum(tmp_frag_seconds)) %>% 
+  mutate(tmp_total_seconds = round(tmp_total_seconds, 0)) %>% 
   select(-bc_key) %>% 
   ungroup() %>% 
   distinct()
 
-log_audio.5 <- log_audio.3 %>% 
-  inner_join(log_audio.4) 
+cz_stats_rod.5 <- cz_stats_rod.3 %>% 
+  inner_join(cz_stats_rod.4) 
 
-log_audio.6 <- log_audio.5 %>% 
-  select(-tmp_frag_minutes, -tmp_bytes_per_minute, -lg_size, -key_rowNum, -lg_sts) %>% 
+cz_stats_rod.6 <- cz_stats_rod.5 %>% 
+  select(-tmp_frag_seconds, -tmp_bps, -lg_size, -key_rowNum, -lg_sts) %>% 
   distinct()
 
-log_audio.7 <- log_audio.6 %>% 
-  mutate(lg_listened_minutes = if_else(tmp_total_minutes <= pgm_minutes,
-                                       tmp_total_minutes,
-                                       pgm_minutes)) %>% 
+cz_stats_rod.7 <- cz_stats_rod.6 %>% 
+  mutate(lg_listened_seconds = if_else(tmp_total_seconds <= pgm_seconds,
+                                       tmp_total_seconds,
+                                       pgm_seconds)) %>% 
   group_by(lg_ipa, lg_usr_agt, lg_pgmkey) %>% 
   mutate(bc_key = row_number()) %>% 
-  filter(bc_key == 1)
+  filter(bc_key == 1) %>% 
+  ungroup()
 
-log_audio.8 <- log_audio.7 %>% 
-  select(-audio_size, -audio_file, -key_tk_dir, -pgm_stop, -pgm_minutes, -tmp_total_minutes, -bc_key) %>% 
-  filter(lg_listened_minutes >= 2)
+cz_stats_rod.8 <- cz_stats_rod.7 %>% 
+  select(-audio_size, -audio_file, -key_tk_dir, -pgm_stop, -pgm_seconds, -tmp_total_seconds, -bc_key) %>% 
+  filter(lg_listened_seconds >= 120)
+
+rm(cz_stats_rod.1,
+   cz_stats_rod.2,
+   cz_stats_rod.3,
+   cz_stats_rod.4,
+   cz_stats_rod.5,
+   cz_stats_rod.6,
+   cz_stats_rod.7)
+
+write_rds(x = cz_stats_rod.8,
+          file = "cz_stats_rod_8.RDS",
+          compress = "gz")
+
+cz_stats_rod.8 <- read_rds(file = "cz_stats_rod_8.RDS")
+cz_stats_cha_08a <- read_rds(file = "cz_stats_cha_08.RDS") 
+
+cz_stats_cha_08 <- cz_stats_cha_08a %>% 
+  inner_join(channels, by = c("cz_cha_id" = "id")) 
+
+cz_stats_rod.9 <- cz_stats_rod.8 %>% 
+  rename(lg_sess_start = lg_ts,
+         lg_session_length = lg_listened_seconds) %>% 
+  mutate(lg_sess_stop = lg_sess_start + seconds(lg_session_length)) %>% 
+  arrange(lg_ipa, lg_usr_agt, lg_sess_start)
+
+# assign an id to each session. itvl: "interval"
+itvl01 <- cz_stats_rod.9 %>% 
+  mutate(lg_sess_id = row_number()) %>% 
+  select(lg_sess_id, everything())
+
+# split in hourly segments ----
+sessions_by_hour <- tibble(
+  sbh.id = 0L,
+  sbh.ts = ymd_hms("1970-01-01 00:00:00", tz = "Europe/Amsterdam"),
+  sbh.length = 0L
+)
+
+for (sid in itvl01$lg_sess_id) {
+  
+  cur_sess <- itvl01 %>% filter(lg_sess_id == sid)
+  fd_start <- floor_date(cur_sess$lg_sess_start, unit = "hour")
+  fd_stop <- floor_date(cur_sess$lg_sess_stop, unit = "hour")
+  
+  if (fd_start == fd_stop) {
+    cur_sbh <- tibble(
+      sbh.id = cur_sess$lg_sess_id,
+      sbh.ts = fd_start,
+      sbh.length = cur_sess$lg_session_length
+    )
+    
+    sessions_by_hour %<>% add_row(cur_sbh)
+    
+  } else {
+    breaks = seq(fd_start, fd_stop, by = "1 hour")
+    sess_hours <- fd_start + hours(0: length(breaks)) 
+    sess_itvls <- int_diff(sess_hours)
+    last_iter <- length(breaks)
+    
+    for (i1 in 1:last_iter) {
+      
+      if (i1 == 1) {
+        
+        cur_sbh <- tibble(
+          sbh.id = cur_sess$lg_sess_id,
+          sbh.ts = fd_start,
+          sbh.length = int_length(interval(cur_sess$lg_sess_start, int_end(sess_itvls[[1]])))
+        )
+        
+      } else if (i1 == last_iter) {
+        
+        cur_sbh <- tibble(
+          sbh.id = cur_sess$lg_sess_id,
+          sbh.ts = fd_stop,
+          sbh.length = int_length(interval(int_start(sess_itvls[[last_iter]]), cur_sess$lg_sess_stop))
+        )
+        
+      } else {
+        
+        cur_sbh <- tibble(
+          sbh.id = cur_sess$lg_sess_id,
+          sbh.ts = int_start(sess_itvls[[i1]]),
+          sbh.length = 3600L
+        )
+        
+      }
+      
+      sessions_by_hour %<>% add_row(cur_sbh)
+    }
+  }
+}
+
+# join segments to pgm details ----
+cz_stats_rod.10 <- sessions_by_hour %>%
+  inner_join(itvl01, by = c("sbh.id" = "lg_sess_id")) %>%
+  mutate(cz_row_id = row_number(),
+         cz_cha_id = 99L,
+         cha_name = "RoD") %>% 
+  select(
+    cz_row_id,
+    cz_id = sbh.id,
+    cz_ipa = lg_ipa,
+    cz_dev_type = lg_device_type,
+    cz_cha_id,
+    cz_ts = sbh.ts,
+    cz_length = sbh.length,
+    cz_ref = lg_referrer,
+    cha_name,
+    pgm_title
+  )
