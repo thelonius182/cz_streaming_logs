@@ -2,6 +2,7 @@
 #
 # Concertzender Monthly Webcast Metrics
 # Version 0.1 - 2021-05-01, SJ/LA
+# Version 0.2 - 2021-08-19, SJ/LA
 #
 # Docs: docs.google.com/document/d/1vrwVwDFrxYJvcjXKxJkF7_R1uNgIE7T2KDOfPx_YIn8
 #
@@ -22,21 +23,60 @@ suppressPackageStartupMessages(library(yaml))
 suppressPackageStartupMessages(library(ssh))
 
 # init logger ----
-fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_cha_log")
+fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_stats_proc_log")
 
 # load functions ----
 source("src/prep_funcs.R", encoding = "UTF-8")
 
-# get live pgms ----
-# Built by query on Nipper-pc, exported as .csv
-# C:\Users\nipper\Documents\cz_queries\oorboekje.sql
-live_stream_pgms_raw <- read_csv("~/Downloads/live_stream_pgms.csv",
-                                 col_types = cols(cz_id = col_integer(),
-                                                  pgm_dtm = col_character(),
-                                                  herh_van = col_skip(),
-                                                  cz_id_herh = col_skip()
-                                 )
-)
+cz_stats_cfg <- read_yaml("config.yaml")
+
+flog.info("selecting this monhts logs", name = "cz_stats_proc_log")
+
+# get start from config file----
+cz_reporting_day_one_chr <- cz_stats_cfg$`current-month`
+cz_reporting_day_one <- ymd_hms(cz_reporting_day_one_chr, tz = "Europe/Amsterdam")
+cz_reporting_start <- cz_reporting_day_one - days(1)
+cz_reporting_stop <- cz_reporting_day_one + months(1) 
+
+# get known periods logged ----
+cz_log_limits <- read_rds(file = "cz_log_limits.RDS")
+
+# get list of log file names to process ----
+cz_log_list <- cz_log_limits %>% 
+  filter(str_detect(cz_log_dir, "logs/S_") 
+         & cz_ts_log >= cz_reporting_start
+         & cz_ts_log <= cz_reporting_stop) %>% 
+  mutate(cz_log_list_path = paste(cz_log_dir, cz_log_file, sep = "/")) %>% 
+  select(cz_log_list_path, cz_ts_log)
+
+# Get gids pgms ----
+# Built by a query on Nipper-pc, exported as .txt/tsv
+# - C:\Users\nipper\Documents\cz_queries\salsa_stats_cz_gids.sql
+# - C:\Users\nipper\Downloads\cz_downloads\salsa_stats_all_pgms.txt
+# copy to ubu_vm via Z370: /home/lon/Downloads/salsa_stats_all_pgms.txt
+salsa_stats_all_pgms_raw <-
+  read_delim(
+    "~/Downloads/salsa_stats_all_pgms.txt",
+    delim = "\t",
+    escape_double = FALSE,
+    col_types = cols(pgmLang = col_skip()),
+    trim_ws = TRUE
+  )
+
+salsa_stats_all_pgms.1 <- salsa_stats_all_pgms_raw %>%
+  mutate(
+    tbh.id = row_number(),
+    tbh.cha_id = 0,
+    tbh.cha_name = "Live-stream",
+    tbh.start = ymd_h(pgmStart, tz = "Europe/Amsterdam"),
+    tbh.stop = ymd_h(pgmStop, tz = "Europe/Amsterdam"),
+    tbh.secs = int_length(interval(tbh.start, tbh.stop)),
+    tbh.title = str_replace(pgmTitle, "&amp;", "&")
+  ) %>%
+  select(starts_with("tbh.")) %>% 
+  filter(tbh.secs > 0)
+
+rm(salsa_stats_all_pgms_raw)
 
 # get theme channel (TC) playlists ----
 # Built by query on Nipper-pc, exported as .csv
@@ -48,18 +88,18 @@ suppressWarnings(
 # get current TC-programs ----
 # Built by query on Nipper-pc, exported as .csv
 # C:\Users\nipper\Documents\cz_queries\themakanalen.sql
-cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms.csv"
-cur_pgms_snapshot <- read_csv(cur_pgms_snapshot_filename)
+# "current" means "for this reporting period"!
+cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms_20210517.csv"
+cur_pgms_snapshot <- read_delim(cur_pgms_snapshot_filename, delim = ",") %>% 
+  mutate(ts_snapshot = ymd_hms("2021-05-17 11:22:09", tz = "Europe/Amsterdam"))
+# cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms_20210820.txt"
+# cur_pgms_snapshot <- read_delim(cur_pgms_snapshot_filename, delim = "\t")
 
 tc_cur_pgms <- cur_pgms_snapshot %>% 
-  select(channel, current_program) %>% 
-  mutate(cp_snap_ts = file_info(cur_pgms_snapshot_filename)$modification_time)
+  select(channel, current_program, cp_snap_ts = ts_snapshot)
 
-
-# # # # # # #   T E S T   O N L Y   # # # # # # # 
-# adjust for test: set snap_ts to feb '21
-month(tc_cur_pgms$cp_snap_ts) <- 2
-# # # # # # #   T E S T   O N L Y   # # # # # # # 
+# adjust month for this report
+# month(tc_cur_pgms$cp_snap_ts) <- 5
 
 
 # gather streaming log files ----

@@ -1,13 +1,5 @@
-# library(tidyr)
-# library(dplyr)
-# library(stringr)
-# library(readr)
-# library(lubridate)
-# library(fs)
-# library(futile.logger)
-# library(yaml)
 
-fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_cha_log")
+fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_stats_proc_log")
 
 # Initialize resulting datastructure
 cz_stats_cha <- tibble(
@@ -22,18 +14,18 @@ cz_stats_cha <- tibble(
   lg_session_length = "l"
 )
 
-
-# # # # # # #   T E S T   O N L Y   # # # # # # # 
-# adjust for test: use feb '21
-cz_log_files <- dir_ls(path = "/home/lon/Documents/cz_streaming_logs/L_20210301_070000/", regexp = "access.+")
-# # # # # # #   T E S T   O N L Y   # # # # # # # 
-
-for (some_log in cz_log_files) {
-  # some_log <- "/home/lon/Documents/cz_streaming_logs/access.log.1"
-  ana_single <- analyze_log(some_log)
+for (cur_log_file in cz_log_list$cz_log_list_path) {
+  ana_single <- analyze_log(cur_log_file)
   cz_stats_cha <- bind_rows(cz_stats_cha, ana_single)
 }
 
 rm(ana_single)
 
-saveRDS(cz_stats_cha, file = "cz_stats_cha.RDS")
+cz_stats_cha.1 <- cz_stats_cha %>% 
+  filter(month(lg_cz_ts) == month(cz_reporting_day_one))
+
+write_rds(x = cz_stats_cha.1,
+          file = "cz_stats_cha.RDS",
+          compress = "gz")
+
+rm(cz_stats_cha, cz_stats_cha.1)

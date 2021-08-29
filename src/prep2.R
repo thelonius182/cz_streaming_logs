@@ -9,7 +9,7 @@
 # library(jsonlite)
 # library(httr)
 
-fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_cha_log")
+fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_stats_proc_log")
 
 if (!exists(x = "cz_stats_cha")) {
   cz_stats_cha <- readRDS(file = "cz_stats_cha.RDS")

@@ -9,27 +9,32 @@ suppressPackageStartupMessages(library(tibble))
 suppressPackageStartupMessages(library(magrittr))
 suppressPackageStartupMessages(library(ssh))
 
-fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_rod.log"), "cz_stats_rod_log")
+fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_stats_proc_log")
 
 if (!exists("rod_logs")) {
-  flog.info("loading DF rod_logs from RDS", name = "cz_stats_rod_log")
+  flog.info("loading DF rod_logs from RDS", name = "cz_stats_proc_log")
   rod_logs <- read_rds(file = "rod_logs_2.RDS")
 } else {
-  flog.info("reusing DF rod_logs", name = "cz_stats_rod_log")
+  flog.info("reusing DF rod_logs", name = "cz_stats_proc_log")
 }
+ 
+# if (!exists("cz_gids")) {
+#   flog.info("loading DF cz_gids from RDS", name = "cz_stats_proc_log")
+#   cz_gids <- read_rds(file = "cz_gids_1.RDS")
+# } else {
+#   flog.info("reusing DF cz_gids", name = "cz_stats_proc_log")
+# }
 
-if (!exists("cz_gids")) {
-  flog.info("loading DF cz_gids from RDS", name = "cz_stats_rod_log")
-  cz_gids <- read_rds(file = "cz_gids_1.RDS")
-} else {
-  flog.info("reusing DF cz_gids", name = "cz_stats_rod_log")
-}
+cz_gids <- salsa_stats_all_pgms.1 %>% 
+  select(pgm_start = tbh.start,
+         pgm_stop = tbh.stop,
+         pgm_title = tbh.title)
 
 if (!exists("cz_audio")) {
-  flog.info("loading DF cz_audio from RDS", name = "cz_stats_rod_log")
+  flog.info("loading DF cz_audio from RDS", name = "cz_stats_proc_log")
   cz_audio <- read_rds(file = "cz_rod_audio_1.RDS")
 } else {
-  flog.info("reusing DF cz_audio.1", name = "cz_stats_rod_log")
+  flog.info("reusing DF cz_audio.1", name = "cz_stats_proc_log")
 }
 
 cz_stats_rod.1 <- rod_logs %>% 
@@ -71,7 +76,7 @@ cz_stats_rod.7 <- cz_stats_rod.6 %>%
 
 cz_stats_rod.8 <- cz_stats_rod.7 %>% 
   select(-audio_size, -audio_file, -key_tk_dir, -pgm_stop, -pgm_seconds, -tmp_total_seconds, -bc_key) %>% 
-  filter(lg_listened_seconds >= 120)
+  filter(lg_listened_seconds >= 60)
 
 rm(cz_stats_rod.1,
    cz_stats_rod.2,
@@ -81,15 +86,11 @@ rm(cz_stats_rod.1,
    cz_stats_rod.6,
    cz_stats_rod.7)
 
-write_rds(x = cz_stats_rod.8,
-          file = "cz_stats_rod_8.RDS",
-          compress = "gz")
-
-cz_stats_rod.8 <- read_rds(file = "cz_stats_rod_8.RDS")
-cz_stats_cha_08a <- read_rds(file = "cz_stats_cha_08.RDS") 
-
-cz_stats_cha_08 <- cz_stats_cha_08a %>% 
-  inner_join(channels, by = c("cz_cha_id" = "id")) 
+# write_rds(x = cz_stats_rod.8,
+#           file = "cz_stats_rod_8.RDS",
+#           compress = "gz")
+# 
+# cz_stats_rod.8 <- read_rds(file = "cz_stats_rod_8.RDS")
 
 cz_stats_rod.9 <- cz_stats_rod.8 %>% 
   rename(lg_sess_start = lg_ts,
@@ -181,3 +182,7 @@ cz_stats_rod.10 <- sessions_by_hour %>%
     cha_name,
     pgm_title
   )
+
+write_rds(x = cz_stats_rod.10,
+          file = "cz_stats_rod.10.RDS",
+          compress = "gz")

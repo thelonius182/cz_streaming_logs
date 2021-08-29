@@ -1,18 +1,4 @@
 
-# clean & prep to split ----
-live_stream_pgms.1 <- live_stream_pgms_raw %>% 
-  mutate(tbh.id = row_number(),
-         tbh.cha_id = 0, 
-         tbh.cha_name = "live-stream", 
-         tbh.start = ymd_h(paste0(pgm_dtm, " ", pgm_start), tz = "Europe/Amsterdam"), 
-         tbh.stop = ymd_h(paste0(pgm_dtm, 
-                                 " ", 
-                                 if_else(pgm_stop == "00", "24", pgm_stop)), 
-                          tz = "Europe/Amsterdam") - seconds(1L), 
-         tbh.secs = int_length(interval(tbh.start, tbh.stop)), 
-         tbh.title = str_replace(title, "&amp;", "&")) %>% 
-  select(starts_with("tbh."))
-
 # split live-stream----
 live_by_hour <- tibble(
   lbh.id = 0L,
@@ -20,9 +6,9 @@ live_by_hour <- tibble(
   lbh.length = 0L
 )
 
-for (cid in live_stream_pgms.1$tbh.id) {
+for (cid in salsa_stats_all_pgms.1$tbh.id) {
   # cid <- 2L
-  cur_track <- live_stream_pgms.1 %>% filter(tbh.id == cid)
+  cur_track <- salsa_stats_all_pgms.1 %>% filter(tbh.id == cid)
   fd_start <- floor_date(cur_track$tbh.start, unit = "hour")
   fd_stop <- floor_date(cur_track$tbh.stop, unit = "hour")
   
@@ -75,7 +61,7 @@ for (cid in live_stream_pgms.1$tbh.id) {
 }
 
 lbh01 <- live_by_hour %>% 
-  left_join(live_stream_pgms.1, by = c("lbh.id" = "tbh.id")) %>% 
+  left_join(salsa_stats_all_pgms.1, by = c("lbh.id" = "tbh.id")) %>% 
   filter(!is.na(tbh.cha_id))
 
 cz_stats_cha_07_live <- cz_stats_cha_07 %>% 
