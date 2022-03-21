@@ -12,7 +12,7 @@
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_cha_log")
 
 if (file_exists("caroussel.RDS")) {
-  caroussel <- readRDS("caroussel.RDS")
+  caroussel <- readRDS(file = "caroussel.RDS")
 } else {
   caroussel <- stage_caroussel()
 }
@@ -25,7 +25,7 @@ cha_cur_pgms <- caroussel %>%
 
 # # # # # # #   T E S T   O N L Y   # # # # # # # 
 # adjust for test: set snap_ts to feb '21
-# month(cha_cur_pgms$cp_snap_ts) <- 2
+month(cha_cur_pgms$cp_snap_ts) <- month(ymd(cz_reporting_day_one, tz = "Europe/Amsterdam"))
 # # # # # # #   T E S T   O N L Y   # # # # # # # 
 
 
@@ -51,7 +51,7 @@ for (a_cur_cha_id in cha_cur_pgms$cha_id) {
   cur_cha_idx <- cur_cha$cha_idx
   cur_cha_idx_max <- cur_cha$cha_idx_max
   
-  while (running_ymd > tc_interval_start) {
+  while (running_ymd > cz_reporting_start) {
     
     cur_cha_idx <- cur_cha_idx - 1L
     
@@ -81,7 +81,7 @@ for (a_cur_cha_id in cha_cur_pgms$cha_id) {
   running_ymd = cur_cha$track_stop
   cur_cha_idx <- cur_cha$cha_idx
 
-  while (running_ymd < tc_interval_stop) {
+  while (running_ymd < cz_reporting_stop) {
     
     cur_cha_idx <- cur_cha_idx + 1L
     
@@ -112,6 +112,6 @@ caroussel.7 <- cur_cha_new %>%
   ) %>% 
   arrange(cha_id, track_start)
 
-saveRDS(caroussel.7, "caroussel_7.RDS")
+saveRDS(caroussel.7, paste0(stats_data_flr(), "caroussel_7.RDS"))
 
 rm(caroussel, cur_cha_new)

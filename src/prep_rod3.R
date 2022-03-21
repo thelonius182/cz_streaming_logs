@@ -128,5 +128,5 @@ rod_audio_full.3 <- rod_audio_full.2 %>%
   filter(key_rowNum == 1)
 
 write_rds(x = rod_audio_full.3,
-          file = "cz_rod_audio_1.RDS",
+          file = paste0(stats_data_flr(), "cz_rod_audio_1.RDS"),
           compress = "gz")

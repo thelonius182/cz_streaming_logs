@@ -16,6 +16,9 @@ suppressPackageStartupMessages(library(jsonlite))
 suppressPackageStartupMessages(library(httr))
 suppressPackageStartupMessages(library(ssh))
 
+# init logger ----
+fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_stats_proc_log")
+
 source(file = "src/prep_funcs.R", encoding = "UTF-8")
 
 proc_gh_logs("Streams") # Themakanalen + Live-stream
@@ -25,6 +28,8 @@ proc_gh_logs("RoD")
 cz_log_limits <- read_rds(file = "cz_log_limits.RDS")
 
 # + get all dirs ----
+flog.info(">>> START checking the logs on greenhost", name = "cz_stats_proc_log")
+
 cz_log_dirs <- dir_ls(path = "/home/lon/Documents/cz_streaming_logs/", regexp = "[RS]_.+", type = "directory")
 
 for (cur_log_dir in cz_log_dirs) {
@@ -60,3 +65,5 @@ for (cur_log_dir in cz_log_dirs) {
 write_rds(x = cz_log_limits,
           file = "cz_log_limits.RDS",
           compress = "gz")
+
+flog.info(">>> STOP checking the logs on greenhost", name = "cz_stats_proc_log")

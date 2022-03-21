@@ -13,7 +13,7 @@
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_cha_log")
 
 if (!exists(x = "cz_stats_cha.04")) {
-  cz_stats_cha.04 <- readRDS(file = "cz_stats_cha.04.RDS")
+  cz_stats_cha.04 <- readRDS(file = paste0(stats_data_flr(), "cz_stats_cha.04.RDS"))
 }
 
 # create clean frgments ----

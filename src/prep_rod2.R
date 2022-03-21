@@ -8,23 +8,23 @@ suppressPackageStartupMessages(library(futile.logger))
 suppressPackageStartupMessages(library(tibble))
 suppressPackageStartupMessages(library(magrittr))
 suppressPackageStartupMessages(library(ssh))
+suppressPackageStartupMessages(library(yaml))
 
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_stats_proc_log")
 
-# load log_done history ----
-# cz_rod_done_path <- "/home/lon/Documents/cz_streaming_logs/gh_logs_history/cz_rod_done.RDS"
+# load functions ----
+source("src/prep_funcs.R", encoding = "UTF-8")
 
-# cz_rod_done <- NULL
+cz_stats_cfg <- read_yaml("config.yaml")
 
-# collect RoD-logs ----
-# cz_log_files <- dir_ls(path = "/home/lon/Documents/cz_streaming_logs/", recurse = T, type = "file",
-#                        regexp = ".*/R_[^/]+/access[.]log[.].*") %>% as_tibble() 
-# 
-# # if there is history: compare ----
-# if (file_exists(cz_rod_done_path)) {
-#   cz_rod_done <- read_rds(file = cz_rod_done_path)
-#   cz_log_files %<>% anti_join(cz_rod_done, by = c("value" = "rod_path"))
-# }
+# get start from config file----
+cz_reporting_day_one_chr <- cz_stats_cfg$`current-month`
+cz_reporting_day_one <- ymd_hms(cz_reporting_day_one_chr, tz = "Europe/Amsterdam")
+cz_reporting_start <- cz_reporting_day_one - days(1)
+cz_reporting_stop <- ceiling_date(cz_reporting_day_one + days(1), unit = "months")
+
+# get known periods logged ----
+cz_log_limits <- read_rds(file = "cz_log_limits.RDS")
 
 # get list of log file names to process ----
 cz_log_rod_list <- cz_log_limits %>% 
@@ -106,6 +106,8 @@ rod_logs.2 <- rod_logs.1 %>%
 # 
 rm(ana_single)
 
+flog.info(paste0("log line count = ", nrow(rod_logs.2)), name = "cz_stats_proc_log")
+
 write_rds(x = rod_logs.2,
-          file = "rod_logs_2.RDS",
+          file = paste0(stats_data_flr(), "rod_logs_2.RDS"),
           compress = "gz")

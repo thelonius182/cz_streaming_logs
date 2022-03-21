@@ -258,8 +258,8 @@ stage_caroussel <- function() {
                                         key_tk.3m, "-",
                                         key_tk.3d, " ",
                                         key_tk.3hh, ":",
-                                        key_tk.3mm)
-    ),
+                                        key_tk.3mm),
+                                 tz = "Europe/Amsterdam"),
     key_tk.2_ymd_rnd = round_date(key_tk.2_ymd, unit = "30 minutes")
     ) 
   
@@ -516,4 +516,71 @@ get_period_logged = function(filepath) {
       cz_ts_log = ts_log
     )
   )
+}
+
+stats_data_flr <- function(scope = "maand") {
+  stats_flr_mnd <- cz_stats_cfg$`current-month` %>% str_sub(1, 7)
+  stats_flr_jaar <- cz_stats_cfg$`current-month` %>% str_sub(1, 4)
+  stats_flr <- NULL
+  
+  if (scope == "maand") {
+    stats_flr <- stats_flr_mnd
+  } else {
+    stats_flr <- stats_flr_jaar
+  }
+  
+  return(paste0(cz_stats_cfg$stats_data_home, stats_flr, "/"))
+}
+
+f2si2 <- function (number, rounding = F)
+{
+  lut <- c(
+    1e-24,
+    1e-21,
+    1e-18,
+    1e-15,
+    1e-12,
+    1e-09,
+    1e-06,
+    0.001,
+    1,
+    1000,
+    1e+06,
+    1e+09,
+    1e+12,
+    1e+15,
+    1e+18,
+    1e+21,
+    1e+24
+  )
+  pre <- c("y",
+           "z",
+           "a",
+           "f",
+           "p",
+           "n",
+           "u",
+           "m",
+           "",
+           "k",
+           "M",
+           "G",
+           "T",
+           "P",
+           "E",
+           "Z",
+           "Y")
+  ix <- findInterval(number, lut)
+  if (lut[ix] != 1) {
+    if (rounding == T) {
+      sistring <- paste(round(number / lut[ix]), pre[ix])
+    }
+    else {
+      sistring <- paste(number / lut[ix], pre[ix])
+    }
+  }
+  else {
+    sistring <- as.character(number)
+  }
+  return(sistring)
 }

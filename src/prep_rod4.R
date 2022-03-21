@@ -13,18 +13,18 @@ fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_
 
 if (!exists("rod_logs")) {
   flog.info("loading DF rod_logs from RDS", name = "cz_stats_proc_log")
-  rod_logs <- read_rds(file = "rod_logs_2.RDS")
+  rod_logs <- read_rds(file = paste0(stats_data_flr(), "rod_logs_2.RDS"))
 } else {
   flog.info("reusing DF rod_logs", name = "cz_stats_proc_log")
 }
- 
-# if (!exists("cz_gids")) {
-#   flog.info("loading DF cz_gids from RDS", name = "cz_stats_proc_log")
-#   cz_gids <- read_rds(file = "cz_gids_1.RDS")
-# } else {
-#   flog.info("reusing DF cz_gids", name = "cz_stats_proc_log")
-# }
 
+if (!exists("salsa_stats_all_pgms.1")) {
+  flog.info("loading salsa_stats_all_pgms.1 from RDS", name = "cz_stats_proc_log")
+  salsa_stats_all_pgms.1 <- read_rds(file = paste0(stats_data_flr(), "salsa_stats_all_pgms.1.RDS"))
+} else {
+  flog.info("reusing salsa_stats_all_pgms.1", name = "cz_stats_proc_log")
+}
+ 
 cz_gids <- salsa_stats_all_pgms.1 %>% 
   select(pgm_start = tbh.start,
          pgm_stop = tbh.stop,
@@ -32,7 +32,7 @@ cz_gids <- salsa_stats_all_pgms.1 %>%
 
 if (!exists("cz_audio")) {
   flog.info("loading DF cz_audio from RDS", name = "cz_stats_proc_log")
-  cz_audio <- read_rds(file = "cz_rod_audio_1.RDS")
+  cz_audio <- read_rds(file = paste0(stats_data_flr(), "cz_rod_audio_1.RDS"))
 } else {
   flog.info("reusing DF cz_audio.1", name = "cz_stats_proc_log")
 }
@@ -85,12 +85,6 @@ rm(cz_stats_rod.1,
    cz_stats_rod.5,
    cz_stats_rod.6,
    cz_stats_rod.7)
-
-# write_rds(x = cz_stats_rod.8,
-#           file = "cz_stats_rod_8.RDS",
-#           compress = "gz")
-# 
-# cz_stats_rod.8 <- read_rds(file = "cz_stats_rod_8.RDS")
 
 cz_stats_rod.9 <- cz_stats_rod.8 %>% 
   rename(lg_sess_start = lg_ts,
@@ -184,5 +178,5 @@ cz_stats_rod.10 <- sessions_by_hour %>%
   )
 
 write_rds(x = cz_stats_rod.10,
-          file = "cz_stats_rod.10.RDS",
+          file = paste0(stats_data_flr(), "cz_stats_rod.10.RDS"),
           compress = "gz")

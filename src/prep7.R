@@ -92,6 +92,6 @@ rm(caroussel.8)
 cz_stats_cha_07 <- cz_stats_cha_05 %>% 
   left_join(caroussel.9, by = c("cz_cha_id" = "cha_id", "cz_ts" = "sbh.ts"))
 
-saveRDS(cz_stats_cha_07, "cz_stats_cha_07.RDS")
+saveRDS(cz_stats_cha_07, file = paste0(stats_data_flr(), "cz_stats_cha_07.RDS"))
 
 rm(cz_stats_cha_05)

@@ -24,8 +24,10 @@ rm(ana_single)
 cz_stats_cha.1 <- cz_stats_cha %>% 
   filter(month(lg_cz_ts) == month(cz_reporting_day_one))
 
+flog.info(paste0("log line count = ", nrow(cz_stats_cha.1)), name = "cz_stats_proc_log")
+
 write_rds(x = cz_stats_cha.1,
-          file = "cz_stats_cha.RDS",
+          file = paste0(stats_data_flr(), "cz_stats_cha.RDS"),
           compress = "gz")
 
 rm(cz_stats_cha, cz_stats_cha.1)

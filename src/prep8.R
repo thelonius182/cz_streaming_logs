@@ -91,4 +91,4 @@ cz_stats_cha_08 <- cz_stats_cha_08a %>%
   select(-item, -slug, -cha_name, cha_name = name) %>% 
   distinct()
 
-saveRDS(cz_stats_cha_08, "cz_stats_cha_08.RDS")
+saveRDS(cz_stats_cha_08, file = paste0(stats_data_flr(), "cz_stats_cha_08.RDS"))

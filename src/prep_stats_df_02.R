@@ -10,12 +10,17 @@ library(jsonlite)
 library(magrittr)
 library(httr)
 
-fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_proc_log")
+fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_stats_proc_log")
 
-# load known geo data
-cz_ipa_geo_full <- readRDS("cz_ipa_geo_full.RDS")
+cz_stats_rod.10 <- read_rds(file = paste0(stats_data_flr(), "cz_stats_rod.10.RDS")) # from prep_rod4.R
+cz_stats_cha_08 <- read_rds(file = paste0(stats_data_flr(), "cz_stats_cha_08.RDS")) # from prep8.R
+cz_ipa_geo_full <- read_rds(file = "cz_ipa_geo_full.RDS") # from previous prep_stats_df_02.R run
 
-# extract new ip-addresses
+cz_stats_joined_01 <- cz_stats_cha_08 %>%
+  bind_rows(cz_stats_rod.10) %>%
+  select(-cz_row_id, -cz_id, -cz_cha_id)
+
+# extract new ip-addresses ----
 # from stats collected in prep_stats_df_01.R
 cz_new_ipa <- cz_stats_joined_01 %>% 
   select(cz_ipa) %>% 
@@ -27,11 +32,11 @@ cz_new_ipa <- cz_stats_joined_01 %>%
          bat_id = 1 + ((ip_idx - ip_idx %% 9000) / 9000))
 
 # log number of new arrivals and departures
-flog.info(paste0("Number of new ip-addresses in past month = ", nrow(cz_new_ipa)), name = "cz_stats_proc_log")
+flog.info(paste0("Number of new ip-addresses in reported month = ", nrow(cz_new_ipa)), name = "cz_stats_proc_log")
 
 cz_departures <- cz_ipa_geo_full %>% anti_join(cz_stats_joined_01, by = c("ip" = "cz_ipa"))
 
-flog.info(paste0("Number of lost ip-addresses in past month = ", nrow(cz_departures)), name = "cz_stats_proc_log")
+flog.info(paste0("Number of lost ip-addresses in reported month = ", nrow(cz_departures)), name = "cz_stats_proc_log")
 
 # prep geo requests template
 cz_curl_template <- "curl 'https://freegeoip.app/json/¶IPA¶' \
@@ -48,7 +53,8 @@ cz_curl_template <- "curl 'https://freegeoip.app/json/¶IPA¶' \
   -H 'cookie: __cfduid=de21a991dc201214c6f5e3971f1d930621616846464' \
   --compressed  "
 
-# fetch geo-info, once for each batch
+# fetch geo-info ----
+# once for each batch
 max_batch_id <- max(cz_new_ipa$bat_id)
 
 for (b1 in 1:max_batch_id) {
@@ -61,23 +67,23 @@ for (b1 in 1:max_batch_id) {
   
   for (cur_ipa in ipa_batch$cz_ipa) {
     cz_curl <- str_replace(cz_curl_template, "¶IPA¶", cur_ipa)
-    cz_straight <- straighten(cz_curl)
-    cz_res <- make_req(cz_straight, add_clip = F)
-    cz_geo <-
+    try(expr = cz_straight <- straighten(cz_curl), silent = T)
+    try(expr = cz_res <- make_req(cz_straight, add_clip = F), silent = T)
+    try(expr = cz_geo <-
       toJSON(content(cz_res[[1]](), as = "parsed"),
              auto_unbox = TRUE,
-             pretty = TRUE)
-    cz_geo_ti <-
-      fromJSON(cz_geo, simplifyDataFrame = T) %>% as_tibble()
+             pretty = TRUE), silent = T)
+    try(expr = cz_geo_ti <-
+      fromJSON(cz_geo, simplifyDataFrame = T) %>% as_tibble(), silent = T)
     
     if (is.null(cz_geo_set)) {
       cz_geo_set <- cz_geo_ti
     } else {
-      cz_geo_set %<>% add_row(cz_geo_ti)
+      try(expr = cz_geo_set %<>% add_row(cz_geo_ti), silent = T)
     }
     
-    flog.info(paste0("new geo for IP ", cur_ipa), name = "cz_stats_cha_log")
-    Sys.sleep(0.5)
+    # flog.info(paste0("new geo for IP ", cur_ipa), name = "cz_stats_proc_log")
+    Sys.sleep(0.1)
   }
   
   # add batch: this prevents processing the same ip-address more than once (between months)
@@ -88,4 +94,8 @@ for (b1 in 1:max_batch_id) {
 # finally: persist the new list
 write_rds(x = cz_ipa_geo_full,
           file = "cz_ipa_geo_full.RDS",
+          compress = "gz")
+
+write_rds(x = cz_ipa_geo_full,
+          file = paste0(stats_data_flr(), "cz_ipa_geo_full.RDS"),
           compress = "gz")

@@ -30,13 +30,13 @@ source("src/prep_funcs.R", encoding = "UTF-8")
 
 cz_stats_cfg <- read_yaml("config.yaml")
 
-flog.info("selecting this monhts logs", name = "cz_stats_proc_log")
-
 # get start from config file----
 cz_reporting_day_one_chr <- cz_stats_cfg$`current-month`
 cz_reporting_day_one <- ymd_hms(cz_reporting_day_one_chr, tz = "Europe/Amsterdam")
 cz_reporting_start <- cz_reporting_day_one - days(1)
-cz_reporting_stop <- cz_reporting_day_one + months(1) 
+cz_reporting_stop <- ceiling_date(cz_reporting_day_one + days(1), unit = "months")
+
+flog.info(paste0("selecting logs for ", cz_reporting_day_one_chr), name = "cz_stats_proc_log")
 
 # get known periods logged ----
 cz_log_limits <- read_rds(file = "cz_log_limits.RDS")
@@ -77,6 +77,9 @@ salsa_stats_all_pgms.1 <- salsa_stats_all_pgms_raw %>%
   filter(tbh.secs > 0)
 
 rm(salsa_stats_all_pgms_raw)
+write_rds(x = salsa_stats_all_pgms.1,
+          file = paste0(stats_data_flr(), "salsa_stats_all_pgms.1.RDS"),
+          compress = "gz")
 
 # get theme channel (TC) playlists ----
 # Built by query on Nipper-pc, exported as .csv
@@ -89,9 +92,9 @@ suppressWarnings(
 # Built by query on Nipper-pc, exported as .csv
 # C:\Users\nipper\Documents\cz_queries\themakanalen.sql
 # "current" means "for this reporting period"!
-cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms_20210517.csv"
+cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms_20211220.csv"
 cur_pgms_snapshot <- read_delim(cur_pgms_snapshot_filename, delim = ",") %>% 
-  mutate(ts_snapshot = ymd_hms("2021-05-17 11:22:09", tz = "Europe/Amsterdam"))
+  mutate(ts_snapshot = ymd_hms("2021-12-20 22:40:09", tz = "Europe/Amsterdam"))
 # cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms_20210820.txt"
 # cur_pgms_snapshot <- read_delim(cur_pgms_snapshot_filename, delim = "\t")
 
@@ -118,28 +121,28 @@ tc_cur_pgms <- cur_pgms_snapshot %>%
 # )
 source("src/prep1.R", encoding = "UTF-8")
 
-# apply Triton rules (1)
+# apply Triton rules (1) ----
 # result: cz_stats_cha.01a
 source("src/prep2.R", encoding = "UTF-8")
 
-# apply Triton rules (2)
+# apply Triton rules (2) ----
 # decode channel names in http-request
 # result: cz_stats_cha.03
 source("src/prep3.R", encoding = "UTF-8")
 
-# apply Triton rules (3)
+# apply Triton rules (3) ----
 # decode device types in user agent
 # result: cz_stats_cha.04
 source("src/prep4.R", encoding = "UTF-8")
 
-# link fragments of same session
+# link fragments of same session ----
 # extract start/stop by linked fragment group
 # remove partial fragments
 # split in hourly segments
 # result: cz_stats_cha.05 
 source("src/prep5.R", encoding = "UTF-8")
 
-# sync Caroussel to current reporting month
+# sync Caroussel to current reporting month ----
 # NBNBNBNB remove test-value for FEB '21 NBNBNBNBNB
 source("src/prep6.R", encoding = "UTF-8")
 
@@ -153,14 +156,32 @@ source("src/prep7.R", encoding = "UTF-8")
 source("src/prep8.R", encoding = "UTF-8")
 
 # gather RoD log files ----
-# result: cz_stats_rod.01
-source("src/prep_rod1.R", encoding = "UTF-8")
+# result: rod_logs.2
+source("src/prep_rod2.R", encoding = "UTF-8")
 
-tmp_titles <- cz_stats_rod.10 %>% select(cz_title) %>% distinct()
+# select gh audio dirs ----
+# collect mp3 details 
+# result: cz_rod_audio_1.RDS
+source("src/prep_rod3.R", encoding = "UTF-8")
 
-tmp_titles_cha <- cz_stats_cha_08 %>% select(pgm_title, cz_cha_id, cha_name, cz_length) %>% 
-  group_by(pgm_title, cz_cha_id, cha_name) %>% 
-  summarise(sum_seconds = sum(cz_length)) %>% 
-  mutate(sum_hours = round(sum_seconds / 3600, 1))
+# split in hourly segments ----
+# result: cz_stats_rod.10.RDS
+source("src/prep_rod4.R", encoding = "UTF-8")
 
-tmp_channels <- cz_stats_cha_08 %>% select(cz_cha_id, cha_name) %>% filter(is.na(cha_name)) %>% distinct()
+# tmp_titles <- cz_stats_rod.10 %>% select(cz_title) %>% distinct()
+# 
+# tmp_titles_cha <- cz_stats_cha_08 %>% select(pgm_title, cz_cha_id, cha_name, cz_length) %>% 
+#   group_by(pgm_title, cz_cha_id, cha_name) %>% 
+#   summarise(sum_seconds = sum(cz_length)) %>% 
+#   mutate(sum_hours = round(sum_seconds / 3600, 1))
+# 
+# tmp_channels <- cz_stats_cha_08 %>% select(cz_cha_id, cha_name) %>% filter(is.na(cha_name)) %>% distinct()
+
+# collect geo-data ----
+# source("src/prep_stats_df_02.R", encoding = "UTF-8")
+
+# convert times to country local ----
+source("src/prep_stats_df_03.R", encoding = "UTF-8")
+
+# reports ----
+source("src/prep_stats_df_04.R", encoding = "UTF-8")

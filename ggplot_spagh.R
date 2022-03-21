@@ -1,74 +1,56 @@
 # Libraries
-library(tidyverse)
-library(hrbrthemes)
-library(kableExtra)
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(hrbrthemes))
+suppressPackageStartupMessages(library(kableExtra))
+suppressPackageStartupMessages(library(streamgraph))
+suppressPackageStartupMessages(library(viridis))
+suppressPackageStartupMessages(library(DT))
+suppressPackageStartupMessages(library(plotly))
+suppressPackageStartupMessages(library(yaml))
+
 options(knitr.table.format = "html")
-library(babynames)
-library(streamgraph)
-library(viridis)
-library(DT)
-library(plotly)
+cz_stats_cfg <- read_yaml("config.yaml")
 
-# Load dataset from github
-data <- babynames %>% 
-  filter(name %in% c("Mary","Emma", "Ida", "Ashley", "Amanda", "Jessica",    "Patricia", "Linda", "Deborah",   "Dorothy", "Betty", "Helen")) %>%
-  filter(sex=="F")
+# load functions ----
+source("src/prep_funcs.R", encoding = "UTF-8")
 
-# Plot
-data %>%
-  ggplot( aes(x=year, y=n, group=name, color=name)) +
-  geom_line() +
-  scale_color_viridis(discrete = TRUE) +
-  theme(
-    legend.position="none",
-    plot.title = element_text(size=14)
-  ) +
-  ggtitle("A spaghetti chart of baby names popularity") +
-  theme_ipsum()
+# CZ stats ----
+cz_stats_report.4f <- read_rds(file = paste0(stats_data_flr(), "cz_stats_report.4f.RDS"))
+cz_stats_report.4c <- read_rds(file = paste0(stats_data_flr(), "cz_stats_report.4c.RDS"))
 
-data %>%
-  mutate( highlight=ifelse(name=="Amanda", "Amanda", "Other")) %>%
-  ggplot( aes(x=year, y=n, group=name, color=highlight, size=highlight)) +
-  geom_line() +
-  scale_color_manual(values = c("#69b3a2", "lightgrey")) +
-  scale_size_manual(values=c(1.5,0.2)) +
-  theme(legend.position="none") +
-  ggtitle("Popularity of American names in the previous 30 years") +
-  theme_ipsum() +
-  geom_label( x=1990, y=55000, label="Amanda reached 3550\nbabies in 1970", size=4, color="#69b3a2") +
-  theme(
-    legend.position="none",
-    plot.title = element_text(size=14)
-  )
+cz_stats_hours <- cz_stats_report.4f %>% bind_rows(cz_stats_report.4c)%>% 
+  select(cha_name, hour_of_day, n_dev) %>% 
+  filter(!cha_name %in% c("TOTALEN")) %>% 
+  ungroup()
 
-data %>%
-  ggplot( aes(x=year, y=n, group=name, fill=name)) +
-  geom_area() +
-  scale_fill_viridis(discrete = TRUE) +
-  theme(legend.position="none") +
-  ggtitle("Popularity of American names in the previous 30 years") +
-  theme_ipsum() +
-  theme(
-    legend.position="none",
-    panel.spacing = unit(0.1, "lines"),
-    strip.text.x = element_text(size = 8),
-    plot.title = element_text(size=14)
-  ) +
-  facet_wrap(~name)
+tmp <- cz_stats_hours %>%
+  mutate(cha_name2 = cha_name)
 
-tmp <- data %>%
-  mutate(name2=name)
+# Luisteraars verspreid over de dag ----
+cz_plot <- paste0("Luisteraars verspreid over de dag (", 
+                  cz_stats_cfg$`current-month` %>% str_sub(1, 7),
+                  ")")
 
 tmp %>%
-  ggplot( aes(x=year, y=n)) +
-  geom_line( data=tmp %>% dplyr::select(-name), aes(group=name2), color="grey", size=0.5, alpha=0.5) +
-  geom_line( aes(color=name), color="#69b3a2", size=1.2 )+
+  ggplot(aes(x = hour_of_day, y = n_dev)) +
+  ggtitle(cz_plot) +
+  geom_line(
+    data = tmp %>% dplyr::select(-cha_name),
+    aes(group = cha_name2),
+    color = "grey",
+    size = 0.5,
+    alpha = 0.5
+  ) +
+  geom_line(aes(color = cha_name), color = "#69b3a2", size = 1.2) +
   scale_color_viridis(discrete = TRUE) +
   theme_ipsum() +
   theme(
-    legend.position="none",
-    plot.title = element_text(size=14),
-    panel.grid = element_blank()
+    legend.position = "none",
+    plot.title = element_text(size = 14),
+    panel.grid = element_blank(),
   ) +
-  ggtitle("A spaghetti chart of baby names popularity") +
-  facet_wrap(~name)
+  xlab(NULL) +
+  ylab(NULL) +
+  scale_x_continuous(breaks = c(0, 6, 12, 18)) +
+  facet_wrap( ~ cha_name)
+
