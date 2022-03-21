@@ -112,7 +112,7 @@ proc_gh_logs <- function(pe_log_type) {
 
 stage_caroussel <- function() {
   
-  fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_cha_log")
+  fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_proc_log")
   
   themakanalen_listed <- themakanalen_listed_raw %>% 
     filter(!is.na(url) & !is.na(pgm_start))
@@ -139,7 +139,7 @@ stage_caroussel <- function() {
   
   for (cur_dir in gh_cha_dirs$cha_dir) {
     
-    flog.info(paste0("listing ", cur_dir), name = "cz_stats_cha_log")
+    flog.info(paste0("listing ", cur_dir), name = "cz_stats_proc_log")
     
     ls_cmd <- paste("ls", cur_dir, "-lt --time-style=+'%Y-%m-%d %H:%M:%S'")
     
@@ -157,7 +157,7 @@ stage_caroussel <- function() {
     # prep the list ----
     if (is.null(cha_audio)) {
       
-      flog.info(paste0("listing failed for", cur_dir), name = "cz_stats_cha_log")
+      flog.info(paste0("listing failed for", cur_dir), name = "cz_stats_proc_log")
       
     } else {
       
@@ -212,7 +212,8 @@ stage_caroussel <- function() {
                                         key_tk.3m, "-", 
                                         key_tk.3d, " ", 
                                         key_tk.3hh, ":",
-                                        key_tk.3mm)),
+                                        key_tk.3mm),
+                                 tz = "Europe/Amsterdam"),
            key_tk.2_ymd_rnd = round_date(key_tk.2_ymd, unit = "30 minutes")
     )
   
@@ -257,8 +258,8 @@ stage_caroussel <- function() {
                                         key_tk.3m, "-",
                                         key_tk.3d, " ",
                                         key_tk.3hh, ":",
-                                        key_tk.3mm)
-    ),
+                                        key_tk.3mm),
+                                 tz = "Europe/Amsterdam"),
     key_tk.2_ymd_rnd = round_date(key_tk.2_ymd, unit = "30 minutes")
     ) 
   
@@ -333,7 +334,7 @@ stage_caroussel <- function() {
 
 analyze_log <- function(logfile) {
   # logfile <- "/home/lon/Documents/cz_streaming_logs/access.log.7"
-  flog.info(paste0("log file: ", logfile), name = "cz_stats_cha_log")
+  flog.info(paste0("log file: ", logfile), name = "cz_stats_proc_log")
   
   # inlezen ----  
   suppressMessages(
@@ -400,7 +401,7 @@ analyze_log <- function(logfile) {
 analyze_rod_log <- function(logfile) {
   # logfile <- "/home/lon/Documents/cz_streaming_logs/R_20210518_204228/access.log.9"
   
-  flog.info(paste0("log file: ", logfile), name = "cz_stats_rod_log")
+  flog.info(paste0("log file: ", logfile), name = "cz_stats_proc_log")
   
   # inlezen ----  
   suppressMessages(
@@ -474,4 +475,112 @@ analyze_rod_log <- function(logfile) {
      rod_log_item_list_names, rod_log_item_list_values, rod_log_items, tomcat_log_pattern)
   
   return(cz_log.1)
+}
+
+get_period_logged = function(filepath) {
+  # TEST_TEST_TEST_TEST    
+  # filepath = "/home/lon/Documents/cz_streaming_logs/S_20210514_115638/access.log.1"
+  # TEST_TEST_TEST_TEST    
+  
+  con = file(filepath, "r")
+  log_line <- readLines(con, n = 1)
+  close(con)
+  
+  # ts_max = ymd_hms("1900-01-01 00:00:00")
+  # ts_min = ymd_hms("2100-01-01 00:00:00")
+  
+  # for (cur_line in log_lines) {
+  #   
+  #   ts_cur_chr <- str_extract(string = cur_line, pattern = "\\[(.*?)\\]")
+  #   ts_cur <- suppressMessages(dmy_hms(ts_cur_chr, tz = "Europe/Amsterdam"))
+  #   
+  #   if (ts_cur > ts_max) {
+  #     ts_max = ts_cur
+  #   }
+  #   
+  #   if (ts_cur < ts_min) {
+  #     ts_min = ts_cur
+  #   }
+  #   
+  # }
+  
+  ts_log_chr <-
+    str_extract(string = log_line, pattern = "\\[(.*?)\\]")
+  ts_log <-
+    suppressMessages(dmy_hms(ts_log_chr, tz = "Europe/Amsterdam"))
+  
+  return(
+    tibble(
+      cz_log_dir = path_dir(filepath),
+      cz_log_file = path_file(filepath),
+      cz_ts_log = ts_log
+    )
+  )
+}
+
+stats_data_flr <- function(scope = "maand") {
+  stats_flr_mnd <- cz_stats_cfg$`current-month` %>% str_sub(1, 7)
+  stats_flr_jaar <- cz_stats_cfg$`current-month` %>% str_sub(1, 4)
+  stats_flr <- NULL
+  
+  if (scope == "maand") {
+    stats_flr <- stats_flr_mnd
+  } else {
+    stats_flr <- stats_flr_jaar
+  }
+  
+  return(paste0(cz_stats_cfg$stats_data_home, stats_flr, "/"))
+}
+
+f2si2 <- function (number, rounding = F)
+{
+  lut <- c(
+    1e-24,
+    1e-21,
+    1e-18,
+    1e-15,
+    1e-12,
+    1e-09,
+    1e-06,
+    0.001,
+    1,
+    1000,
+    1e+06,
+    1e+09,
+    1e+12,
+    1e+15,
+    1e+18,
+    1e+21,
+    1e+24
+  )
+  pre <- c("y",
+           "z",
+           "a",
+           "f",
+           "p",
+           "n",
+           "u",
+           "m",
+           "",
+           "k",
+           "M",
+           "G",
+           "T",
+           "P",
+           "E",
+           "Z",
+           "Y")
+  ix <- findInterval(number, lut)
+  if (lut[ix] != 1) {
+    if (rounding == T) {
+      sistring <- paste(round(number / lut[ix]), pre[ix])
+    }
+    else {
+      sistring <- paste(number / lut[ix], pre[ix])
+    }
+  }
+  else {
+    sistring <- as.character(number)
+  }
+  return(sistring)
 }

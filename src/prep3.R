@@ -12,7 +12,7 @@
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_cha_log")
 
 if (!exists(x = "cz_stats_cha.01a")) {
-  cz_stats_cha.01a <- readRDS(file = "cz_stats_cha.01a.RDS")
+  cz_stats_cha.01a <- readRDS(file = paste0(stats_data_flr(), "cz_stats_cha.01a.RDS"))
 }
 
 # read channel info ----
@@ -70,4 +70,4 @@ cz_stats_cha.03 <- cz_stats_cha.02 %>%
 
 rm(cz_stats_cha.02)  
 
-saveRDS(cz_stats_cha.03, file = "cz_stats_cha.03.RDS")
+saveRDS(cz_stats_cha.03, file = paste0(stats_data_flr(), "cz_stats_cha.03.RDS"))

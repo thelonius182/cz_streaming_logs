@@ -13,18 +13,19 @@
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_cha_log")
 
 if (!exists(x = "cz_stats_cha.03")) {
-  cz_stats_cha.03 <- readRDS(file = "cz_stats_cha.03.RDS")
+  cz_stats_cha.03 <- readRDS(file = paste0(stats_data_flr(), "cz_stats_cha.03.RDS"))
 }
 
 # prep current month
-tc_interval_ts <- tc_cur_pgms$cp_snap_ts[[1]]
-day(tc_interval_ts) <- 1L
-hour(tc_interval_ts) <- 0L
-minute(tc_interval_ts) <- 0L
-second(tc_interval_ts) <- 0L
-tc_interval_start <- tc_interval_ts - days(1)
-tc_interval_stop <- tc_interval_ts + months(1) + days(1)
-cur_month <- interval(tc_interval_start, tc_interval_stop, tzone = "Europe/Amsterdam")
+# tc_interval_ts <- tc_cur_pgms$cp_snap_ts[[1]]
+# day(tc_interval_ts) <- 1L
+# hour(tc_interval_ts) <- 0L
+# minute(tc_interval_ts) <- 0L
+# second(tc_interval_ts) <- 0L
+# tc_interval_start <- tc_interval_ts - days(1)
+# tc_interval_stop <- tc_interval_ts + months(1) + days(1)
+# cur_month <- interval(tc_interval_start, tc_interval_stop, tzone = "Europe/Amsterdam")
+cur_month <- interval(cz_reporting_start, cz_reporting_stop, tzone = "Europe/Amsterdam")
 
 cz_stats_cha.04 <- cz_stats_cha.03 %>% 
   # + filter: TD-3.1 ----
@@ -69,4 +70,4 @@ cz_stats_cha.04 <- cz_stats_cha.03 %>%
 
 rm(cz_stats_cha.03)
 
-saveRDS(cz_stats_cha.04, file = "cz_stats_cha.04.RDS")
+saveRDS(cz_stats_cha.04, file = paste0(stats_data_flr(), "cz_stats_cha.04.RDS"))

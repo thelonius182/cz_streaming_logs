@@ -1,18 +1,4 @@
 
-# clean & prep to split ----
-live_stream_pgms.1 <- live_stream_pgms_raw %>% 
-  mutate(tbh.id = row_number(),
-         tbh.cha_id = 0, 
-         tbh.cha_name = "live-stream", 
-         tbh.start = ymd_h(paste0(pgm_dtm, " ", pgm_start), tz = "Europe/Amsterdam"), 
-         tbh.stop = ymd_h(paste0(pgm_dtm, 
-                                 " ", 
-                                 if_else(pgm_stop == "00", "24", pgm_stop)), 
-                          tz = "Europe/Amsterdam") - seconds(1L), 
-         tbh.secs = int_length(interval(tbh.start, tbh.stop)), 
-         tbh.title = str_replace(title, "&amp;", "&")) %>% 
-  select(starts_with("tbh."))
-
 # split live-stream----
 live_by_hour <- tibble(
   lbh.id = 0L,
@@ -20,9 +6,9 @@ live_by_hour <- tibble(
   lbh.length = 0L
 )
 
-for (cid in live_stream_pgms.1$tbh.id) {
+for (cid in salsa_stats_all_pgms.1$tbh.id) {
   # cid <- 2L
-  cur_track <- live_stream_pgms.1 %>% filter(tbh.id == cid)
+  cur_track <- salsa_stats_all_pgms.1 %>% filter(tbh.id == cid)
   fd_start <- floor_date(cur_track$tbh.start, unit = "hour")
   fd_stop <- floor_date(cur_track$tbh.stop, unit = "hour")
   
@@ -75,7 +61,7 @@ for (cid in live_stream_pgms.1$tbh.id) {
 }
 
 lbh01 <- live_by_hour %>% 
-  left_join(live_stream_pgms.1, by = c("lbh.id" = "tbh.id")) %>% 
+  left_join(salsa_stats_all_pgms.1, by = c("lbh.id" = "tbh.id")) %>% 
   filter(!is.na(tbh.cha_id))
 
 cz_stats_cha_07_live <- cz_stats_cha_07 %>% 
@@ -89,7 +75,20 @@ cz_stats_cha_07_live <- cz_stats_cha_07 %>%
 cz_stats_cha_07_tc <- cz_stats_cha_07 %>% 
   filter(cz_cha_id != 0)
 
-cz_stats_cha_08 <- cz_stats_cha_07_live %>% 
+cz_stats_cha_08a <- cz_stats_cha_07_live %>% 
   bind_rows(cz_stats_cha_07_tc)
 
-saveRDS(cz_stats_cha_08, "cz_stats_cha_08.RDS")
+# read channel info ----
+channels <- read_delim(
+  "~/Documents/chan_prep_final.csv",
+  "\t",
+  escape_double = FALSE,
+  trim_ws = TRUE
+)
+
+cz_stats_cha_08 <- cz_stats_cha_08a %>% 
+  inner_join(channels, by = c("cz_cha_id" = "id")) %>% 
+  select(-item, -slug, -cha_name, cha_name = name) %>% 
+  distinct()
+
+saveRDS(cz_stats_cha_08, file = paste0(stats_data_flr(), "cz_stats_cha_08.RDS"))

@@ -6,56 +6,33 @@ suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(fs))
 suppressPackageStartupMessages(library(futile.logger))
 suppressPackageStartupMessages(library(tibble))
+suppressPackageStartupMessages(library(magrittr))
+suppressPackageStartupMessages(library(ssh))
 
-fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_rod.log"), "cz_stats_rod_log")
+fa <-
+  flog.appender(appender.file("/home/lon/Documents/cz_stats_rod.log"),
+                "cz_stats_rod_log")
 
-# load log_done history ----
-cz_rod_done_path <- "/home/lon/Documents/cz_streaming_logs/gh_logs_history/cz_rod_done.RDS"
-
-cz_rod_done <- NULL
-
-# collect RoD-logs ----
-cz_log_files <- dir_ls(path = "/home/lon/Documents/cz_streaming_logs/", recurse = T, type = "file",
-                       regexp = ".*/R_[^/]+/access[.]log[.].*") %>% as_tibble() 
-
-# if there is history: compare ----
-if (file_exists(cz_rod_done_path)) {
-  cz_rod_done <- read_rds(file = cz_rod_done_path)
-  cz_log_files %<>% anti_join(cz_rod_done, by = c("value" = "rod_path"))
-}
-
-# if new files arrived ----
-if (nrow(cz_log_files) > 0) {
-  
-  cz_stats_rod.01 = NULL
-  
-  for (a_path in cz_log_files$value) {
-    # a_path <- "/home/lon/Documents/cz_streaming_logs/R_20210518_204228/access.log.9"
-    ana_single <- analyze_rod_log(a_path)
-    
-    if (is.null(cz_stats_rod.01)) {
-      cz_stats_rod.01 <- ana_single
-    } else {
-      cz_stats_rod.01 %<>% bind_rows(ana_single)
-    }
-    
-    cz_rod_current <- tibble(rod_path = a_path)
-    
-    if (is.null(cz_rod_done)) {
-      cz_rod_done <- cz_rod_current
-    } else {
-      cz_rod_done %<>% add_row(cz_rod_current)
-    }
-    
-  }
-  
-  write_rds(x = cz_rod_done,
-            file = cz_rod_done_path,
-            compress = "gz")
-  
-  rm(ana_single)
-  
-  write_rds(x = cz_stats_rod.01, 
-            file = "cz_stats_rod.01.RDS",
-            compress = "gz")
-}
+# Built by query on Nipper-pc, exported as .tsv
+# C:\Users\nipper\Documents\cz_queries\salsa_stats_pgms.sql
+# salsa_stats_all_pgms_raw <-
+#   read_delim(
+#     "~/Downloads/salsa_stats_all_pgms.txt",
+#     delim = "\t",
+#     escape_double = FALSE,
+#     col_types = cols(pgmLang = col_skip()),
+#     trim_ws = TRUE
+#   )
+# 
+# cz_gids.1 <- salsa_stats_all_pgms.1 %>%
+#   mutate(
+#     pgm_start = round_date(ymd_h(pgmStart, tz = "Europe/Amsterdam"), unit = "30 minutes"),
+#     pgm_stop = round_date(ymd_h(pgmStop, tz = "Europe/Amsterdam"), unit = "30 minutes")
+#   ) %>%
+#   filter(pgm_start != pgm_stop) %>%
+#   select(pgm_start, pgm_stop, pgm_title = pgmTitle) %>%
+#   arrange(pgm_start)
+# 
+# write_rds(x = cz_gids.1,
+#           file = "cz_gids_1.RDS",
+#           compress = "gz")
