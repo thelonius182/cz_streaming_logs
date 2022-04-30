@@ -23,7 +23,7 @@ for (cid in salsa_stats_all_pgms.1$tbh.id) {
     
   } else {
     breaks = seq(fd_start, fd_stop, by = "1 hour")
-    tbh.hours <- fd_start + hours(0: length(breaks)) 
+    tbh.hours <- fd_start + dhours(0: length(breaks)) 
     tbh.itvls <- int_diff(tbh.hours)
     last_iter <- length(breaks)
     

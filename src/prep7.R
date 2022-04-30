@@ -8,7 +8,7 @@ caroussel.7a <- caroussel.7 %>%
          track_stop = if_else(hour(track_stop) == 0 
                               & minute(track_stop) == 0
                               & second(track_stop) == 0,
-                              track_stop - seconds(1L),
+                              track_stop - dseconds(1L),
                               track_stop)) %>% 
   select(caroussel_id, everything())
 
@@ -37,7 +37,7 @@ for (cid in caroussel.7a$caroussel_id) {
     
   } else {
     breaks = seq(fd_start, fd_stop, by = "1 hour")
-    track_hours <- fd_start + hours(0: length(breaks)) 
+    track_hours <- fd_start + dhours(0: length(breaks)) 
     track_itvls <- int_diff(track_hours)
     last_iter <- length(breaks)
     

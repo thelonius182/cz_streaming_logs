@@ -89,7 +89,7 @@ rm(cz_stats_rod.1,
 cz_stats_rod.9 <- cz_stats_rod.8 %>% 
   rename(lg_sess_start = lg_ts,
          lg_session_length = lg_listened_seconds) %>% 
-  mutate(lg_sess_stop = lg_sess_start + seconds(lg_session_length)) %>% 
+  mutate(lg_sess_stop = lg_sess_start + dseconds(lg_session_length)) %>% 
   arrange(lg_ipa, lg_usr_agt, lg_sess_start)
 
 # assign an id to each session. itvl: "interval"
@@ -121,7 +121,7 @@ for (sid in itvl01$lg_sess_id) {
     
   } else {
     breaks = seq(fd_start, fd_stop, by = "1 hour")
-    sess_hours <- fd_start + hours(0: length(breaks)) 
+    sess_hours <- fd_start + dhours(0: length(breaks)) 
     sess_itvls <- int_diff(sess_hours)
     last_iter <- length(breaks)
     

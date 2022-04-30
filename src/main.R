@@ -3,6 +3,7 @@
 # Concertzender Monthly Webcast Metrics
 # Version 0.1 - 2021-05-01, SJ/LA
 # Version 0.2 - 2021-08-19, SJ/LA
+# Version 1.0 - 2022-03-21, SJ/LA
 #
 # Docs: docs.google.com/document/d/1vrwVwDFrxYJvcjXKxJkF7_R1uNgIE7T2KDOfPx_YIn8
 #
@@ -33,8 +34,8 @@ cz_stats_cfg <- read_yaml("config.yaml")
 # get start from config file----
 cz_reporting_day_one_chr <- cz_stats_cfg$`current-month`
 cz_reporting_day_one <- ymd_hms(cz_reporting_day_one_chr, tz = "Europe/Amsterdam")
-cz_reporting_start <- cz_reporting_day_one - days(1)
-cz_reporting_stop <- ceiling_date(cz_reporting_day_one + days(1), unit = "months")
+cz_reporting_start <- cz_reporting_day_one - ddays(1)
+cz_reporting_stop <- ceiling_date(cz_reporting_day_one + ddays(1), unit = "months")
 
 flog.info(paste0("selecting logs for ", cz_reporting_day_one_chr), name = "cz_stats_proc_log")
 
@@ -52,7 +53,7 @@ cz_log_list <- cz_log_limits %>%
 # Get gids pgms ----
 # Built by a query on Nipper-pc, exported as .txt/tsv
 # - C:\Users\nipper\Documents\cz_queries\salsa_stats_cz_gids.sql
-# - C:\Users\nipper\Downloads\cz_downloads\salsa_stats_all_pgms.txt
+# - C:\Users\nipper\Downloads\salsa_stats_all_pgms.txt
 # copy to ubu_vm via Z370: /home/lon/Downloads/salsa_stats_all_pgms.txt
 salsa_stats_all_pgms_raw <-
   read_delim(
@@ -61,7 +62,7 @@ salsa_stats_all_pgms_raw <-
     escape_double = FALSE,
     col_types = cols(pgmLang = col_skip()),
     trim_ws = TRUE
-  )
+  ) %>% filter(pgmTitle != "NULL")
 
 salsa_stats_all_pgms.1 <- salsa_stats_all_pgms_raw %>%
   mutate(
@@ -89,21 +90,17 @@ suppressWarnings(
 )
 
 # get current TC-programs ----
-# Built by query on Nipper-pc, exported as .csv
+# Built by query on Nipper-pc, exported as themakanalen_current_pgms.csv
 # C:\Users\nipper\Documents\cz_queries\themakanalen.sql
 # "current" means "for this reporting period"!
-cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms_20211220.csv"
-cur_pgms_snapshot <- read_delim(cur_pgms_snapshot_filename, delim = ",") %>% 
-  mutate(ts_snapshot = ymd_hms("2021-12-20 22:40:09", tz = "Europe/Amsterdam"))
-# cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms_20210820.txt"
-# cur_pgms_snapshot <- read_delim(cur_pgms_snapshot_filename, delim = "\t")
+cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms.csv"
+cur_pgms_snapshot.1 <- read_delim(cur_pgms_snapshot_filename, delim = ",") 
+pgms_snapshot_info <- file_info(cur_pgms_snapshot_filename)
+cur_pgms_snapshot <- cur_pgms_snapshot.1 %>% 
+  mutate(ts_snapshot = pgms_snapshot_info$modification_time)
 
 tc_cur_pgms <- cur_pgms_snapshot %>% 
   select(channel, current_program, cp_snap_ts = ts_snapshot)
-
-# adjust month for this report
-# month(tc_cur_pgms$cp_snap_ts) <- 5
-
 
 # gather streaming log files ----
 # stored in /home/lon/Documents/cz_streaming_logs/L_* ("logs Themakanalen + Live-stream")
@@ -178,7 +175,7 @@ source("src/prep_rod4.R", encoding = "UTF-8")
 # tmp_channels <- cz_stats_cha_08 %>% select(cz_cha_id, cha_name) %>% filter(is.na(cha_name)) %>% distinct()
 
 # collect geo-data ----
-# source("src/prep_stats_df_02.R", encoding = "UTF-8")
+source("src/prep_stats_df_02.R", encoding = "UTF-8")
 
 # convert times to country local ----
 source("src/prep_stats_df_03.R", encoding = "UTF-8")

@@ -54,7 +54,8 @@ itvl04 <- itvl03 %>%
 # assign an id to each session
 itvl05 <- itvl04 %>% 
   mutate(lg_sess_id = row_number()) %>% 
-  select(lg_sess_id, everything())
+  select(lg_sess_id, everything()) %>% 
+  filter(!is.na(lg_sess_stop))
 
 # split in hourly segments ----
 sessions_by_hour <- tibble(
@@ -80,7 +81,7 @@ for (sid in itvl05$lg_sess_id) {
     
   } else {
     breaks = seq(fd_start, fd_stop, by = "1 hour")
-    sess_hours <- fd_start + hours(0: length(breaks)) 
+    sess_hours <- fd_start + dhours(0: length(breaks)) 
     sess_itvls <- int_diff(sess_hours)
     last_iter <- length(breaks)
     

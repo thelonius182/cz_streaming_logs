@@ -41,12 +41,12 @@ cz_stats_cha.04 <- cz_stats_cha.03 %>%
   # + filter: TD-3.8 ----
   mutate(lg_session_length = if_else(lg_session_length > 86400L, 86400L, lg_session_length),
          lg_session_start = lg_cz_ts,
-         lg_session_stop = lg_cz_ts + seconds(lg_session_length),
+         lg_session_stop = lg_cz_ts + dseconds(lg_session_length),
          # if a pgm stops TOTH, make it stop 1 second earlier to facilitate splitting by hour later on
          stop_toth = if_else(minute(lg_session_stop) == 0 & second(lg_session_stop) == 0, T, F),
-         lg_session_stop = if_else(stop_toth, lg_session_stop - seconds(1L), lg_session_stop),
+         lg_session_stop = if_else(stop_toth, lg_session_stop - dseconds(1L), lg_session_stop),
          lg_session_length = if_else(stop_toth, 
-                                     as.integer(lg_session_length - seconds(1L)), 
+                                     as.integer(lg_session_length - dseconds(1L)), 
                                      as.integer(lg_session_length))
   ) %>% 
   # current month only ----

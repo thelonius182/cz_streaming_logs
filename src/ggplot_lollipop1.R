@@ -1,10 +1,12 @@
 suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(magrittr))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(viridis))
 suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(hrbrthemes))
 suppressPackageStartupMessages(library(yaml))
 suppressPackageStartupMessages(library(sitools))
+suppressPackageStartupMessages(library(fs))
 
 suppressMessages( hrbrthemes::import_roboto_condensed())
 cz_stats_cfg <- read_yaml("config.yaml")
@@ -101,8 +103,8 @@ for (a_name in lolli.1$cha_name) {
 
 lolli.2 %<>% distinct() 
 
-# plot it
-ggplot( data = lolli.2, 
+# plot olot: Overzicht Live Ondemand Themakanalen
+olot <- ggplot( data = lolli.2, 
         aes(fill = cz_group, color = cz_group)) +
   geom_segment( aes(x = cha_name, xend = cha_name,
                     y = 0, yend = cz_totaal),
@@ -142,6 +144,17 @@ ggplot( data = lolli.2,
                          format(round(n_devices_month, digits = -2), big.mark = ".", decimal.mark = ","))
   ) +
   scale_color_manual(values = c('#29AF7FFF', 'red', "#440154FF")) 
+
+ggsave(
+  plot = olot,
+  device = "png",
+  width = 500,
+  height = 350,
+  units = "mm",
+  bg = "white",
+  filename = "olot_2021.12.png",
+  path = "~/Documents/cz_stats_data"
+)
   # scale_x_continuous(expand = expansion(mult = 0.1)) 
 
   # geom_hline(aes(yintercept = n_devices_month), size = 0.6, colour = "red") +

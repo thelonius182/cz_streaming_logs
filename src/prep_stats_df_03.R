@@ -60,14 +60,15 @@ cz_stats_joined_03 <- cz_stats_joined_02 %>%
 #     escape_double = FALSE,
 #     col_types = cols(pgmLang = col_skip()),
 #     trim_ws = TRUE
-#   )
-# pgm_titles_unique <- salsa_stats_all_pgms_raw %>% 
-#   select(pgmTitle) %>% 
-#   distinct() %>% 
-#   mutate(pgmTtle_clean = str_to_sentence(str_replace_all(pgmTitle, "[[:punct:]]", ""))) %>% 
+#   ) %>% filter(pgmTitle != "NULL") %>% 
+# 
+# pgm_titles_unique <- salsa_stats_all_pgms_raw %>%
+#   select(pgmTitle) %>%
+#   distinct() %>%
+#   mutate(pgmTtle_clean = str_to_sentence(str_replace_all(pgmTitle, "[[:punct:]]", ""))) %>%
 #   arrange(pgmTitle)
 # 
-# write_delim(pgm_titles_unique, file = "~/Downloads/pgm_title_cleaner.tsv", delim = "\t")
+# write_delim(pgm_titles_unique, file = "~/Downloads/pgm_title_cleaner_20220402.tsv", delim = "\t")
 
 # In ieder geval wel deze doen!
 cz_pgm_titles_fixed.1 <- read_delim("~/Downloads/pgm_title_cleaner.tsv",

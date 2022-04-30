@@ -24,7 +24,18 @@ cz_stats_hours <- cz_stats_report.4f %>% bind_rows(cz_stats_report.4c)%>%
   ungroup()
 
 tmp <- cz_stats_hours %>%
-  mutate(cha_name2 = cha_name)
+  mutate(cha_name = if_else(cha_name == "RoD", "Radio on Demand", cha_name),
+         cha_name2 = cha_name) %>%
+  filter(
+    cha_name %in% c(
+      "Concertzender Oude Muziek",
+      "Geen dag zonder Bach",
+      "Live",
+      "Radio on Demand",
+      "Concertzender Jazz",
+      "Barok"
+    )
+  )
 
 # Luisteraars verspreid over de dag ----
 cz_plot <- paste0("Luisteraars verspreid over de dag (", 

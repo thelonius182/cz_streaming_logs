@@ -20,8 +20,8 @@ cz_stats_cfg <- read_yaml("config.yaml")
 # get start from config file----
 cz_reporting_day_one_chr <- cz_stats_cfg$`current-month`
 cz_reporting_day_one <- ymd_hms(cz_reporting_day_one_chr, tz = "Europe/Amsterdam")
-cz_reporting_start <- cz_reporting_day_one - days(1)
-cz_reporting_stop <- ceiling_date(cz_reporting_day_one + days(1), unit = "months")
+cz_reporting_start <- cz_reporting_day_one - ddays(1)
+cz_reporting_stop <- ceiling_date(cz_reporting_day_one + ddays(1), unit = "months")
 
 # get known periods logged ----
 cz_log_limits <- read_rds(file = "cz_log_limits.RDS")
