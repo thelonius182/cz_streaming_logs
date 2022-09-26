@@ -9,93 +9,83 @@ library(curlconverter)
 library(jsonlite)
 library(magrittr)
 library(httr)
+library(yaml)
 
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_stats_proc_log")
 
-cz_stats_rod.10 <- read_rds(file = paste0(stats_data_flr(), "cz_stats_rod.10.RDS")) # from prep_rod4.R
-cz_stats_cha_08 <- read_rds(file = paste0(stats_data_flr(), "cz_stats_cha_08.RDS")) # from prep8.R
-cz_ipa_geo_full <- read_rds(file = "cz_ipa_geo_full.RDS") # from previous prep_stats_df_02.R run
+source("src/prep_funcs.R", encoding = "UTF-8")
+cz_stats_cfg <- read_yaml("config.yaml")
 
+cz_stats_rod.10 <- read_rds(file = paste0(stats_data_flr(), "cz_stats_rod.10.RDS")) # from prep_rod4.R (RoD)
+cz_stats_cha_08 <- read_rds(file = paste0(stats_data_flr(), "cz_stats_cha_08.RDS")) # from prep8.R (Live + ThCh)
+cz_ipa_geo_full <- read_rds(file = "cz_ipa_geo_full.RDS") # from previous prep_stats_df_02.R run
+cz_ipa_geo_full.1 <- cz_ipa_geo_full %>% select(ip) %>% distinct()
+
+# full set current month: RoD + Live + ThCh
 cz_stats_joined_01 <- cz_stats_cha_08 %>%
   bind_rows(cz_stats_rod.10) %>%
   select(-cz_row_id, -cz_id, -cz_cha_id)
 
-# extract new ip-addresses ----
-# from stats collected in prep_stats_df_01.R
-cz_new_ipa <- cz_stats_joined_01 %>% 
+# unique IP's in full set current month
+cz_stats_joined_01.1 <- cz_stats_joined_01 %>% 
   select(cz_ipa) %>% 
-  distinct() %>% 
-  # only the new ones
-  anti_join(cz_ipa_geo_full, by = c("cz_ipa" = "ip")) %>% 
-  # split into batches, to stay within freegeoip limit of allowed number of requests
-  mutate(ip_idx = row_number(),
-         bat_id = 1 + ((ip_idx - ip_idx %% 9000) / 9000))
+  distinct()
+
+# extract new IP's ----
+cz_new_ipa <- cz_stats_joined_01.1 %>% anti_join(cz_ipa_geo_full.1, by = c("cz_ipa" = "ip"))
 
 # log number of new arrivals and departures
-flog.info(paste0("Number of new ip-addresses in reported month = ", nrow(cz_new_ipa)), name = "cz_stats_proc_log")
+flog.info(paste0("Number of all known ip-addresses = ", nrow(cz_ipa_geo_full.1)), name = "cz_stats_proc_log")
+flog.info(paste0("Number of ip-addresses in reported month = ", nrow(cz_stats_joined_01.1)), name = "cz_stats_proc_log")
+flog.info(paste0("Number of new arrivals in reported month = ", nrow(cz_new_ipa)), name = "cz_stats_proc_log")
 
-cz_departures <- cz_ipa_geo_full %>% anti_join(cz_stats_joined_01, by = c("ip" = "cz_ipa"))
+ipstack_key = "825a28031a3f92f76608202d5f9e1bb2"
+geo_request_template <- paste0("http://api.ipstack.com/@CZ_IPA?access_key=",
+                        ipstack_key, 
+                        "&fields=region_name,continent_name,country_code,country_name,city&output=json")
 
-flog.info(paste0("Number of lost ip-addresses in reported month = ", nrow(cz_departures)), name = "cz_stats_proc_log")
+geo_response_template <- read_rds(file = "geo_response_dft.RDS")
+geo_response_set <- geo_response_template %>% mutate(cz_ipa = "to_be_removed")
+wi_loops <- 0
 
-# prep geo requests template
-cz_curl_template <- "curl 'https://freegeoip.app/json/¶IPA¶' \
-  -H 'authority: freegeoip.app' \
-  -H 'dnt: 1' \
-  -H 'upgrade-insecure-requests: 1' \
-  -H 'user-agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:87.0) Gecko/20100101 Firefox/87.0' \
-  -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
-  -H 'sec-fetch-site: none' \
-  -H 'sec-fetch-mode: navigate' \
-  -H 'sec-fetch-user: ?1' \
-  -H 'sec-fetch-dest: document' \
-  -H 'accept-language: nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7' \
-  -H 'cookie: __cfduid=de21a991dc201214c6f5e3971f1d930621616846464' \
-  --compressed  "
-
-# fetch geo-info ----
-# once for each batch
-max_batch_id <- max(cz_new_ipa$bat_id)
-
-for (b1 in 1:max_batch_id) {
-  # give geo-server a break
-  Sys.sleep(10.0)
+for (an_ip in cz_new_ipa$cz_ipa) {
   
-  # process (next) batch
-  ipa_batch <- cz_new_ipa %>% filter(bat_id == b1)
-  cz_geo_set = NULL
+  # an_ip <- cz_new_ipa$cz_ipa[[1]]
+  # print(paste("ip =", an_ip))
   
-  for (cur_ipa in ipa_batch$cz_ipa) {
-    cz_curl <- str_replace(cz_curl_template, "¶IPA¶", cur_ipa)
-    try(expr = cz_straight <- straighten(cz_curl), silent = T)
-    try(expr = cz_res <- make_req(cz_straight, add_clip = F), silent = T)
-    try(expr = cz_geo <-
-      toJSON(content(cz_res[[1]](), as = "parsed"),
-             auto_unbox = TRUE,
-             pretty = TRUE), silent = T)
-    try(expr = cz_geo_ti <-
-      fromJSON(cz_geo, simplifyDataFrame = T) %>% as_tibble(), silent = T)
-    
-    if (is.null(cz_geo_set)) {
-      cz_geo_set <- cz_geo_ti
-    } else {
-      try(expr = cz_geo_set %<>% add_row(cz_geo_ti), silent = T)
-    }
-    
-    # flog.info(paste0("new geo for IP ", cur_ipa), name = "cz_stats_proc_log")
-    Sys.sleep(0.1)
+  # prep current dft-response (geo_response_set should have all IP's in cz_new_ipa, also the ones ipstack.com refuses)
+  geo_response_dft <- geo_response_template %>% mutate(cz_ipa = an_ip)
+  
+  # get the IP-details
+  geo_request <- geo_request_template %>% str_replace("@CZ_IPA", an_ip)
+  geo_response.1 <- GET(geo_request)
+  
+  # service-error
+  if (status_code(geo_response.1) != 200) {
+    geo_response_set %<>% bind_rows(geo_response_dft)
+    next
   }
   
-  # add batch: this prevents processing the same ip-address more than once (between months)
-  cz_ipa_geo_full <- cz_ipa_geo_full %>%
-    bind_rows(cz_geo_set)
+  geo_response.2 <- content(geo_response.1, "parsed") %>% as_tibble() %>% mutate(cz_ipa = an_ip)
+  wi_loops <- wi_loops + 1
+  
+  # invalid response
+  if ("error" %in% names(geo_response.2)) {
+    geo_response_set %<>% bind_rows(geo_response_dft)
+    next
+  }
+
+  geo_response_set %<>% bind_rows(geo_response.2)
+  
+  if (wi_loops == 2) {
+    break
+  }
 }
 
-# finally: persist the new list
-write_rds(x = cz_ipa_geo_full,
-          file = "cz_ipa_geo_full.RDS",
-          compress = "gz")
+# store the set, to prevent processing the same ip-address more than once (across months)
+# - after removing the stub!
+geo_response_set <- geo_response_set %>% filter(cz_ipa != "to_be_removed") %>% rename(ip = cz_ipa)
+cz_ipa_geo_full %<>% bind_rows(geo_response_set)
 
-write_rds(x = cz_ipa_geo_full,
-          file = paste0(stats_data_flr(), "cz_ipa_geo_full.RDS"),
-          compress = "gz")
+# finally: persist the new list
+write_rds(x = cz_ipa_geo_full, file = "cz_ipa_geo_full.RDS", compress = "gz")

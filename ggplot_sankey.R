@@ -142,5 +142,3 @@ htmlwidgets::onRender(p, '
     })
   }
 ')
-
-

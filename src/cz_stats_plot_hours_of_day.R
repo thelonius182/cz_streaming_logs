@@ -2,7 +2,7 @@
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(hrbrthemes))
 suppressPackageStartupMessages(library(kableExtra))
-suppressPackageStartupMessages(library(streamgraph))
+# suppressPackageStartupMessages(library(streamgraph))
 suppressPackageStartupMessages(library(viridis))
 suppressPackageStartupMessages(library(DT))
 suppressPackageStartupMessages(library(plotly))
@@ -41,6 +41,7 @@ tmp <- cz_stats_hours %>%
 cz_plot <- paste0("Luisteraars verspreid over de dag (", 
                   cz_stats_cfg$`current-month` %>% str_sub(1, 7),
                   ")")
+png(paste0(stats_data_flr(), "diagrams/CZ-luistercijfers, dagspreiding.png"), width = 0.7*1177, height = 0.7*800, units = "px")
 
 tmp %>%
   ggplot(aes(x = hour_of_day, y = n_dev)) +
@@ -57,11 +58,13 @@ tmp %>%
   theme_ipsum() +
   theme(
     legend.position = "none",
-    plot.title = element_text(size = 14),
+    plot.title = element_text(size = 28),
     panel.grid = element_blank(),
+    strip.text = element_text(size = 18)
   ) +
   xlab(NULL) +
   ylab(NULL) +
   scale_x_continuous(breaks = c(0, 6, 12, 18)) +
   facet_wrap( ~ cha_name)
 
+dev.off()

@@ -1,0 +1,112 @@
+# Libraries
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(hrbrthemes))
+suppressPackageStartupMessages(library(kableExtra))
+# suppressPackageStartupMessages(library(streamgraph))
+suppressPackageStartupMessages(library(viridis))
+suppressPackageStartupMessages(library(DT))
+suppressPackageStartupMessages(library(plotly))
+suppressPackageStartupMessages(library(yaml))
+
+options(knitr.table.format = "html")
+cz_stats_cfg <- read_yaml("config.yaml")
+
+# load functions ----
+source("src/prep_funcs.R", encoding = "UTF-8")
+
+# prep title list ----
+cz_stats_verzendlijst.tpt <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - themakanalen-per-titel.tsv",
+                                        delim = "\t", escape_double = FALSE,
+                                        trim_ws = TRUE,
+                                        show_col_types = FALSE) 
+
+tpt_dft.1 <- cz_stats_verzendlijst.tpt %>% 
+  select(titel_gids, themakanaal) %>% distinct() 
+
+rod_all <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
+                                delim = "\t", escape_double = FALSE,
+                                trim_ws = TRUE,
+                                show_col_types = FALSE) %>% 
+  filter(deelnemer_actief == "j") %>% 
+  select(titel_gids) %>% distinct() %>% 
+  mutate(themakanaal = "Radio on Demand")
+
+live_stream_tonen <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
+                                        delim = "\t", escape_double = FALSE,
+                                        trim_ws = TRUE,
+                                        show_col_types = FALSE) %>% 
+  filter(deelnemer_actief == "j" & live_stream_tonen == "j") %>% 
+  select(titel_gids) %>% arrange(titel_gids) %>% distinct()
+
+tpt_dft.2 <- rod_all %>% 
+  filter(titel_gids %in% live_stream_tonen$titel_gids) %>% 
+  select(titel_gids) %>% distinct() %>% 
+  mutate(themakanaal = "Live")
+
+cz_stats_verzendlijst.tpt.1 <-
+  cz_stats_verzendlijst.tpt %>% 
+  bind_rows(tpt_dft.1) %>% 
+  bind_rows(rod_all) %>% 
+  bind_rows(tpt_dft.2) %>% 
+  arrange(titel_gids, themakanaal) %>% 
+  filter(!(titel_gids == "Concertzender Live" & themakanaal == "Radio on Demand")) %>% 
+  select(-greenhost_stream) %>% distinct()
+
+# CZ stats ----
+cz_stats_report.4f <- read_rds(file = paste0(stats_data_flr(), "cz_stats_report.4f.RDS"))
+cz_stats_report.4c <- read_rds(file = paste0(stats_data_flr(), "cz_stats_report.4c.RDS"))
+
+cz_stats_hours <- cz_stats_report.4f %>% bind_rows(cz_stats_report.4c)%>% 
+  select(cha_name, hour_of_day, n_dev) %>% 
+  filter(!cha_name %in% c("TOTALEN")) %>% 
+  ungroup()
+
+chas_by_pgm <- cz_stats_verzendlijst.tpt.1 %>% group_by(titel_gids) %>% 
+  mutate(cha_filter = paste0("c('", str_flatten(themakanaal, collapse = "', '"), "')"),
+         cha_filter = str_replace_all(cha_filter, "'", '"')) %>% 
+  select(-themakanaal) %>% distinct() %>% ungroup()
+
+for (titel in chas_by_pgm$titel_gids) {
+  print(titel)
+  cha_names <- cz_stats_verzendlijst.tpt.1 %>% filter(titel_gids == titel) %>% select(themakanaal)
+  
+  tmp <- cz_stats_hours %>%
+    mutate(cha_name = if_else(cha_name == "RoD", "Radio on Demand", cha_name),
+           cha_name2 = cha_name) %>%
+    filter(cha_name %in% cha_names$themakanaal)
+
+  # Luisteraars verspreid over de dag ----
+  cz_plot <- paste0("Luisteraars verspreid over de dag (", 
+                    cz_stats_cfg$`current-month` %>% str_sub(1, 7),
+                    ")")
+  
+  png(paste0(stats_data_flr(), 
+             "diagrams/Streams waar ",
+             titel,
+             " in opgenomen is.png"), width = 0.7*1177, height = 0.7*800, units = "px")
+  
+  print(ggplot(data = tmp, aes(x = hour_of_day, y = n_dev)) +
+          ggtitle(cz_plot) +
+          geom_line(
+            data = tmp %>% dplyr::select(-cha_name),
+            aes(group = cha_name2),
+            color = "grey",
+            size = 0.5,
+            alpha = 0.5
+          ) +
+          geom_line(aes(color = cha_name), color = "#69b3a2", size = 1.2) +
+          scale_color_viridis(discrete = TRUE) +
+          theme_ipsum() +
+          theme(
+            legend.position = "none",
+            plot.title = element_text(size = 28),
+            panel.grid = element_blank(),
+            strip.text = element_text(size = 18)
+          ) +
+          xlab(NULL) +
+          ylab(NULL) +
+          scale_x_continuous(breaks = c(0, 6, 12, 18)) +
+          facet_wrap( ~ cha_name))
+  
+  dev.off()
+}

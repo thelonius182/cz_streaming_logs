@@ -27,6 +27,7 @@ suppressPackageStartupMessages(library(ssh))
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_stats_proc_log")
 
 # load functions ----
+# has func defs only
 source("src/prep_funcs.R", encoding = "UTF-8")
 
 cz_stats_cfg <- read_yaml("config.yaml")
@@ -42,7 +43,7 @@ flog.info(paste0("selecting logs for ", cz_reporting_day_one_chr), name = "cz_st
 # get known periods logged ----
 cz_log_limits <- read_rds(file = "cz_log_limits.RDS")
 
-# get list of log file names to process ----
+# get list of which log files to process ----
 cz_log_list <- cz_log_limits %>% 
   filter(str_detect(cz_log_dir, "logs/S_") 
          & cz_ts_log >= cz_reporting_start
@@ -78,8 +79,10 @@ salsa_stats_all_pgms.1 <- salsa_stats_all_pgms_raw %>%
   filter(tbh.secs > 0)
 
 rm(salsa_stats_all_pgms_raw)
+rds_file <- paste0(stats_data_flr(), "salsa_stats_all_pgms.1.RDS")
+dir_create(path_dir(rds_file))
 write_rds(x = salsa_stats_all_pgms.1,
-          file = paste0(stats_data_flr(), "salsa_stats_all_pgms.1.RDS"),
+          file = rds_file,
           compress = "gz")
 
 # get theme channel (TC) playlists ----
@@ -177,8 +180,14 @@ source("src/prep_rod4.R", encoding = "UTF-8")
 # collect geo-data ----
 source("src/prep_stats_df_02.R", encoding = "UTF-8")
 
-# convert times to country local ----
-source("src/prep_stats_df_03.R", encoding = "UTF-8")
+# convert times to country local A ----
+source("src/prep_stats_df_03A.R", encoding = "UTF-8")
+
+# STOP HERE! check cz_stats_joined_04_missing ----
+# and update ~/Downloads/pgm_title_cleaner.tsv if ..missing isn't empty
+
+# convert times to country local B ----
+source("src/prep_stats_df_03B.R", encoding = "UTF-8")
 
 # reports ----
-source("src/prep_stats_df_04.R", encoding = "UTF-8")
+source("src/prep_stats_df_05.R", encoding = "UTF-8")

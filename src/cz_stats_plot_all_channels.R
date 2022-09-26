@@ -152,8 +152,8 @@ ggsave(
   height = 350,
   units = "mm",
   bg = "white",
-  filename = "olot_2021.12.png",
-  path = "~/Documents/cz_stats_data"
+  filename = "CZ-luistercijfers, alle kanalen.png",
+  path = paste0(stats_data_flr(), "diagrams/")
 )
   # scale_x_continuous(expand = expansion(mult = 0.1)) 
 
