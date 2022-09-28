@@ -115,14 +115,15 @@ gm_auth(email = "cz.teamservice@gmail.com")
 cz_stats_msg_body_template <- "
 @aanhef
 
-Er zijn weer nieuwe luistercijfers, zowel zenderbreed als specifiek voor jouw programma('s).
+Wordt het een opsteker of een afknapper? De kop in het zand of het hoofd in de wolken? 
 
-Als je vragen hebt, stel ze gerust!
+Dit zijn de eerste cijfers.
 
-Vriendelijke groet, namens CZ-teamservice,
+Met groet van CZ-teamservice,
 Lon
 
-Bedoeld voor @cz_adres
+PS - de CZ-stats zijn nog werk-in-uitvoering, dus graag 
+een seintje als er iets niet klopt - bijvoorbaat dank!
 "
 
 # create emails ----
@@ -137,8 +138,8 @@ for (cur_mail_to in send_loop_mail_to$email) {
     att_set <- email_details %>% filter(aanhef == cur_aanhef) %>% select(cz_stats_pgm_png, cz_stats_streams_png)
   
     cz_stats_msg <- gm_mime() %>%
-      gm_to("vandenakker.info@xs4all.nl") %>%
-      # gm_to(cur_mailaddress) %>%
+      # gm_to("vandenakker.info@xs4all.nl") %>%
+      gm_to(cur_mailaddress) %>%
       gm_from("cz.teamservice@concertzender.nl") %>%
       gm_subject(paste0("CZ-luistercijfers, ", stats_data_flr() %>% str_extract(pattern = "\\d{4}-\\d{2}"))) %>%
       # gm_text_body(cur_body)
@@ -170,7 +171,7 @@ for (cur_mail_to in send_loop_mail_to$email) {
 # gm_create_draft(test_email)
 # 
 # # If all is good with your draft, then you can send it
-gm_send_message(test_email)
+# gm_send_message(test_email)
 # # You can add a file attachment to your message with gm_attach_file().
 # 
 # write.csv(mtcars,"mtcars.csv")
