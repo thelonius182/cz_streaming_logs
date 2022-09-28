@@ -72,7 +72,7 @@ cur_pgms_w_editor <- salsa_stats_all_pgms_w_editor %>%
   select(pgmTitle, post_editor) %>% distinct() %>% arrange(pgmTitle, post_editor) %>% 
   mutate(pgmTitle = case_when(pgmTitle == "Bach &amp; Co" ~ "Bach en Co",
                               pgmTitle == "Groove &amp; Grease" ~ "Groove and Grease",
-                              pgmTitle == "JazzNotJazz Music &amp; Politics" ~ "JazzNotJazz Music and Politics",
+                              pgmTitle == "JazzNotJazz Music &amp; Politics" ~ "JazzNotJazz",
                               pgmTitle == "Framework 1" ~ "Framework",
                               pgmTitle == "Framework 2" ~ "Framework",
                               pgmTitle == "Missa etcetera" ~ "Missa Etcetera",
@@ -115,16 +115,17 @@ gm_auth(email = "cz.teamservice@gmail.com")
 cz_stats_msg_body_template <- "
 @aanhef
 
-Wordt het een opsteker of een afknapper? De kop in het zand of het hoofd in de wolken? 
+Wat zal het worden? Een opsteker of een afknapper? 
+De kop in het zand of het hoofd in de wolken? 
+Ga je door de grond of door het dak? 
 
-Dit zijn de eerste cijfers.
+Hier zijn de eerste cijfers.
 
 Met groet van CZ-teamservice,
 Lon
-
-PS - de CZ-stats zijn nog werk-in-uitvoering, dus graag 
-een seintje als er iets niet klopt - bijvoorbaat dank!
 "
+
+# send_loop_mail_to <- read_rds("rerun_emails.RDS")
 
 # create emails ----
 for (cur_mail_to in send_loop_mail_to$email) {
@@ -137,13 +138,15 @@ for (cur_mail_to in send_loop_mail_to$email) {
     cur_body <- cz_stats_msg_body_template %>% str_replace("@aanhef", cur_aanhef)
     att_set <- email_details %>% filter(aanhef == cur_aanhef) %>% select(cz_stats_pgm_png, cz_stats_streams_png)
   
+    print(cur_mail_to)
+    
     cz_stats_msg <- gm_mime() %>%
       # gm_to("vandenakker.info@xs4all.nl") %>%
-      gm_to(cur_mailaddress) %>%
+      gm_to(cur_mail_to) %>%
       gm_from("cz.teamservice@concertzender.nl") %>%
       gm_subject(paste0("CZ-luistercijfers, ", stats_data_flr() %>% str_extract(pattern = "\\d{4}-\\d{2}"))) %>%
-      # gm_text_body(cur_body)
-      gm_text_body(cur_body %>% str_replace("@cz_adres", cur_mail_to))
+      gm_text_body(cur_body)
+      # gm_text_body(cur_body %>% str_replace("@cz_adres", cur_mail_to))
   
     for (cur_png in att_set$cz_stats_pgm_png) {
       cz_stats_msg <- cz_stats_msg %>% gm_attach_file(cur_png)
