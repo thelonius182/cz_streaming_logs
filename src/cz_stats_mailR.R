@@ -79,7 +79,12 @@ cur_pgms_w_editor <- salsa_stats_all_pgms_w_editor %>%
                               pgmTitle == "Dansen en de blues" ~ "Dansen en de Blues",
                               TRUE ~ pgmTitle),
          post_editor = case_when(post_editor == "Framework" ~ "Hessel Veldman",
-                                 TRUE ~ post_editor))
+                                 post_editor == "Framework" ~ "Hessel Veldman",
+                                 TRUE ~ post_editor)) %>% 
+  add_row(tibble(pgmTitle = "Acoustic Moods", post_editor = "Hans Meerman")) %>% 
+  add_row(tibble(pgmTitle = "Acoustic Roots", post_editor = "Hans Meerman")) %>% 
+  add_row(tibble(pgmTitle = "Bach en Co", post_editor = "Hans Meerman")) %>% 
+  add_row(tibble(pgmTitle = "Geen dag zonder Bach", post_editor = "Hans Meerman")) 
 
 # init mailinglist cur month ----
 cur_pgms_vzl <- cur_pgms_w_editor %>% 
@@ -159,6 +164,7 @@ for (cur_mail_to in send_loop_mail_to$email) {
     cz_stats_msg <- cz_stats_msg %>% gm_attach_file("/home/lon/Documents/cz_stats_data/2022-04/diagrams/CZ-luistercijfers, alle kanalen.png")
     
     gm_send_message(cz_stats_msg)
+    # gm_create_draft(cz_stats_msg)
   }
 }
 
