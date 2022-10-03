@@ -40,6 +40,14 @@ cz_reporting_stop <- ceiling_date(cz_reporting_day_one + ddays(1), unit = "month
 
 flog.info(paste0("selecting logs for ", cz_reporting_day_one_chr), name = "cz_stats_proc_log")
 
+# init stats directory
+stats_dir <- paste0(cz_stats_cfg$stats_data_home, str_sub(cz_reporting_day_one_chr, 1, 7))
+
+if (!dir_exists(stats_dir)) {
+  dir_create(stats_flr)
+  dir_create(paste0(stats_flr, "/diagrams"))
+}
+
 # get known periods logged ----
 cz_log_limits <- read_rds(file = "cz_log_limits.RDS")
 
@@ -62,7 +70,8 @@ salsa_stats_all_pgms_raw <-
     delim = "\t",
     escape_double = FALSE,
     col_types = cols(pgmLang = col_skip()),
-    trim_ws = TRUE
+    trim_ws = TRUE,
+    quote = ""
   ) %>% filter(pgmTitle != "NULL")
 
 salsa_stats_all_pgms.1 <- salsa_stats_all_pgms_raw %>%
@@ -97,7 +106,10 @@ suppressWarnings(
 # C:\Users\nipper\Documents\cz_queries\themakanalen.sql
 # "current" means "for this reporting period"!
 cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms.csv"
-cur_pgms_snapshot.1 <- read_delim(cur_pgms_snapshot_filename, delim = ",") 
+cur_pgms_snapshot.1 <-
+  read_delim(cur_pgms_snapshot_filename, 
+             delim = ",",
+             quote = "")
 pgms_snapshot_info <- file_info(cur_pgms_snapshot_filename)
 cur_pgms_snapshot <- cur_pgms_snapshot.1 %>% 
   mutate(ts_snapshot = pgms_snapshot_info$modification_time)
@@ -178,7 +190,8 @@ source("src/prep_rod4.R", encoding = "UTF-8")
 # tmp_channels <- cz_stats_cha_08 %>% select(cz_cha_id, cha_name) %>% filter(is.na(cha_name)) %>% distinct()
 
 # collect geo-data ----
-source("src/prep_stats_df_02.R", encoding = "UTF-8")
+# skip until Sem finds his credit card
+# source("src/prep_stats_df_02.R", encoding = "UTF-8")
 
 # convert times to country local A ----
 source("src/prep_stats_df_03A.R", encoding = "UTF-8")

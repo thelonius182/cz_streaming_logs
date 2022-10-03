@@ -62,6 +62,7 @@ colors_in=c( rgb(0.2,0.5,0.5,0.4), rgb(0.8,0.2,0.5,0.4) , rgb(0.7,0.5,0.1,0.4) )
 cz_stats_verzendlijst.1 <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
                                       delim = "\t", escape_double = FALSE,
                                       trim_ws = TRUE,
+                                      quote = "",
                                       show_col_types = FALSE) %>% 
   filter(deelnemer_actief == "j")
 

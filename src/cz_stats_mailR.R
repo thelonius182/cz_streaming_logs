@@ -15,6 +15,7 @@ source("src/prep_funcs.R", encoding = "UTF-8")
 cz_stats_verzendlijst.tpt <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - themakanalen-per-titel.tsv",
                                       delim = "\t", escape_double = FALSE,
                                       trim_ws = TRUE,
+                                      quote = "",
                                       show_col_types = FALSE) 
  
 # tpt_dft.1 <- cz_stats_verzendlijst.tpt %>% 
@@ -36,11 +37,13 @@ cz_stats_verzendlijst.tpt.list <- cz_stats_verzendlijst.tpt %>%
 cz_stats_verzendlijst.mad <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - mailadressen.tsv",
                                       delim = "\t", escape_double = FALSE,
                                       trim_ws = TRUE,
+                                      quote = "",
                                       show_col_types = FALSE) 
 
 cz_stats_verzendlijst.vzl <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
                                       delim = "\t", escape_double = FALSE,
                                       trim_ws = TRUE,
+                                      quote = "",
                                       show_col_types = FALSE) %>% 
   filter(deelnemer_actief == "j") %>% 
   select(-deelnemer_actief, -live_stream_tonen) %>% 

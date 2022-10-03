@@ -343,7 +343,8 @@ analyze_log <- function(logfile) {
       "\t",
       escape_double = FALSE,
       col_names = FALSE,
-      trim_ws = TRUE, 
+      trim_ws = TRUE,
+      quote = ""
     )
   )
   
@@ -411,6 +412,7 @@ analyze_rod_log <- function(logfile) {
       escape_double = FALSE,
       col_names = FALSE,
       trim_ws = TRUE, 
+      quote = ""
     )
   )
   

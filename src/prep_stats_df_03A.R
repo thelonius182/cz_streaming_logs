@@ -75,7 +75,8 @@ cz_pgm_titles_fixed.1 <- read_delim("~/Downloads/pgm_title_cleaner.tsv",
   delim = "\t",
   escape_double = FALSE,
   col_names = TRUE,
-  trim_ws = TRUE
+  trim_ws = TRUE,
+  quote = ""
 )
 
 names(cz_pgm_titles_fixed.1) <- c("pgm_title", "pgm_title_fixed")

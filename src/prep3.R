@@ -20,7 +20,8 @@ channels <- read_delim(
   "~/Documents/chan_prep_final.csv",
   "\t",
   escape_double = FALSE,
-  trim_ws = TRUE
+  trim_ws = TRUE,
+  quote = ""
 )
 
 # update channels ----

@@ -79,7 +79,9 @@ pgm2cha <- read_rds(file = paste0(stats_data_flr(), "caroussel_7.RDS")) %>%
 #   arrange(titel_gids, titel_moro, redacteur)
 
 cz_stats_verzendlijst.1 <- read_delim("~/Downloads/Luistercijfers verzendlijst - ovz.tsv",
-                                      delim = "\t", escape_double = FALSE, quote = "",
+                                      delim = "\t", 
+                                      escape_double = FALSE, 
+                                      quote = "",
                                       trim_ws = TRUE,
                                       show_col_types = FALSE) %>% 
   filter(actief_jn == "j") %>% 

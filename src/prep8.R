@@ -83,7 +83,8 @@ channels <- read_delim(
   "~/Documents/chan_prep_final.csv",
   "\t",
   escape_double = FALSE,
-  trim_ws = TRUE
+  trim_ws = TRUE,
+  quote = ""
 )
 
 cz_stats_cha_08 <- cz_stats_cha_08a %>% 

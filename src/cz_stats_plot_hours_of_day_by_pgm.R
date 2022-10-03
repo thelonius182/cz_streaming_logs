@@ -18,23 +18,26 @@ source("src/prep_funcs.R", encoding = "UTF-8")
 cz_stats_verzendlijst.tpt <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - themakanalen-per-titel.tsv",
                                         delim = "\t", escape_double = FALSE,
                                         trim_ws = TRUE,
+                                        quote = "",
                                         show_col_types = FALSE) 
 
 tpt_dft.1 <- cz_stats_verzendlijst.tpt %>% 
   select(titel_gids, themakanaal) %>% distinct() 
 
 rod_all <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
-                                delim = "\t", escape_double = FALSE,
-                                trim_ws = TRUE,
-                                show_col_types = FALSE) %>% 
+                      delim = "\t", escape_double = FALSE,
+                      trim_ws = TRUE,
+                      quote = "",
+                      show_col_types = FALSE) %>% 
   filter(deelnemer_actief == "j") %>% 
   select(titel_gids) %>% distinct() %>% 
   mutate(themakanaal = "Radio on Demand")
 
 live_stream_tonen <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
-                                        delim = "\t", escape_double = FALSE,
-                                        trim_ws = TRUE,
-                                        show_col_types = FALSE) %>% 
+                                delim = "\t", escape_double = FALSE,
+                                trim_ws = TRUE,
+                                quote = "",
+                                show_col_types = FALSE) %>% 
   filter(deelnemer_actief == "j" & live_stream_tonen == "j") %>% 
   select(titel_gids) %>% arrange(titel_gids) %>% distinct()
 

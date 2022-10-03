@@ -37,7 +37,7 @@ n_lihrs_00 <- cz_licharod_stats_report.1 %>%
   group_by(cha_name) %>% 
   summarise(lihrs = round(sum(cz_length) / 3600),
             n_sess = n()) %>% 
-  mutate(mean_sess_per_hr = ceiling(n_sess / report_hrs_lirod),
+  mutate(mean_sess_per_hr = ceiling(n_sess / report_hrs_licharod),
          mean_mins_per_sess = ceiling(60 * lihrs / n_sess)) %>% 
   ungroup() %>% 
   mutate(lihrs_tot = sum(lihrs), 
@@ -161,7 +161,7 @@ cz_licharod_stats_report_total <- cz_licharod_stats_report.2 %>%
             avond_pct = round(mean(avond_pct), 1),
             nacht_pct = round(mean(nacht_pct), 1)) %>% 
   ungroup() %>% 
-  mutate(unieke_luisteraars = n_devices_month_lirod, cha_name = "TOTALEN") %>% 
+  mutate(unieke_luisteraars = n_devices_month_licharod, cha_name = "TOTALEN") %>% 
   select(jaar = cz_lirod_stats_year,
          maand = cz_lirod_stats_month,
          themakanalen = cha_name,
