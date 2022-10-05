@@ -104,6 +104,8 @@ for (a_name in lolli.1$cha_name) {
 lolli.2 %<>% distinct() 
 
 # plot olot: Overzicht Live Ondemand Themakanalen
+plot_cur_month <- cz_stats_cfg$`current-month` %>% str_sub(6, 7)
+
 olot <- ggplot( data = lolli.2, 
         aes(fill = cz_group, color = cz_group)) +
   geom_segment( aes(x = cha_name, xend = cha_name,
@@ -138,7 +140,19 @@ olot <- ggplot( data = lolli.2,
   xlab(NULL) +
   ylab(NULL) +
   labs(title = paste0("Overzicht Live, OnDemand en Themakanalen (",
-                      cz_stats_cfg$`current-month` %>% str_sub(1, 7),
+                      case_when(plot_cur_month == "01" ~ "Jan. ",
+                                plot_cur_month == "02" ~ "Feb. ",
+                                plot_cur_month == "03" ~ "Mrt. ",
+                                plot_cur_month == "04" ~ "Apr. ",
+                                plot_cur_month == "05" ~ "Mei ",
+                                plot_cur_month == "06" ~ "Jun. ",
+                                plot_cur_month == "07" ~ "Jul. ",
+                                plot_cur_month == "08" ~ "Aug. ",
+                                plot_cur_month == "09" ~ "Sep. ",
+                                plot_cur_month == "10" ~ "Okt. ",
+                                plot_cur_month == "11" ~ "Nov. ",
+                                TRUE ~ "Dec. "),
+                      cz_stats_cfg$`current-month` %>% str_sub(1, 4),
                       ")"),
        subtitle = paste0("unieke luisteraars (totaal) = ",
                          format(round(n_devices_month, digits = -2), big.mark = ".", decimal.mark = ","))

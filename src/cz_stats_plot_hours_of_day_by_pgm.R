@@ -69,6 +69,23 @@ chas_by_pgm <- cz_stats_verzendlijst.tpt.1 %>% group_by(titel_gids) %>%
          cha_filter = str_replace_all(cha_filter, "'", '"')) %>% 
   select(-themakanaal) %>% distinct() %>% ungroup()
 
+plot_cur_month <- cz_stats_cfg$`current-month` %>% str_sub(6, 7)
+plot_cur_period <- paste0(" (",
+                          case_when(plot_cur_month == "01" ~ "Jan. ",
+                                    plot_cur_month == "02" ~ "Feb. ",
+                                    plot_cur_month == "03" ~ "Mrt. ",
+                                    plot_cur_month == "04" ~ "Apr. ",
+                                    plot_cur_month == "05" ~ "Mei ",
+                                    plot_cur_month == "06" ~ "Jun. ",
+                                    plot_cur_month == "07" ~ "Jul. ",
+                                    plot_cur_month == "08" ~ "Aug. ",
+                                    plot_cur_month == "09" ~ "Sep. ",
+                                    plot_cur_month == "10" ~ "Okt. ",
+                                    plot_cur_month == "11" ~ "Nov. ",
+                                    TRUE ~ "Dec. "),
+                          cz_stats_cfg$`current-month` %>% str_sub(1, 4),
+                          ")")
+
 for (titel in chas_by_pgm$titel_gids) {
   print(titel)
   cha_names <- cz_stats_verzendlijst.tpt.1 %>% filter(titel_gids == titel) %>% select(themakanaal)
@@ -79,9 +96,7 @@ for (titel in chas_by_pgm$titel_gids) {
     filter(cha_name %in% cha_names$themakanaal)
 
   # Luisteraars verspreid over de dag ----
-  cz_plot <- paste0("Luisteraars verspreid over de dag (", 
-                    cz_stats_cfg$`current-month` %>% str_sub(1, 7),
-                    ")")
+  cz_plot <- paste0("Luisteraars verspreid over de dag", plot_cur_period)
   
   png(paste0(stats_data_flr(), 
              "diagrams/Streams waar ",

@@ -76,6 +76,23 @@ cz_stats_titles <- cz_stats_by_pgm.1 %>% select(pgm_title) %>% distinct()
 dir_create(paste0(stats_data_flr(), "diagrams/"))
 
 # create diagrams ----
+plot_cur_month <- cz_stats_cfg$`current-month` %>% str_sub(6, 7)
+plot_cur_period <- paste0(" (",
+                          case_when(plot_cur_month == "01" ~ "Jan. ",
+                                    plot_cur_month == "02" ~ "Feb. ",
+                                    plot_cur_month == "03" ~ "Mrt. ",
+                                    plot_cur_month == "04" ~ "Apr. ",
+                                    plot_cur_month == "05" ~ "Mei ",
+                                    plot_cur_month == "06" ~ "Jun. ",
+                                    plot_cur_month == "07" ~ "Jul. ",
+                                    plot_cur_month == "08" ~ "Aug. ",
+                                    plot_cur_month == "09" ~ "Sep. ",
+                                    plot_cur_month == "10" ~ "Okt. ",
+                                    plot_cur_month == "11" ~ "Nov. ",
+                                    TRUE ~ "Dec. "),
+                          cz_stats_cfg$`current-month` %>% str_sub(1, 4),
+                          ")")
+
 for (wrk_title in cz_stats_titles$pgm_title) {
   cz_pgm_radar.a <- cz_pgm_radar.1 %>% filter(pgm_title == wrk_title)
   
@@ -83,7 +100,8 @@ for (wrk_title in cz_stats_titles$pgm_title) {
   proper_pgm_title <- cz_stats_verzendlijst.1 %>% filter(titel_stats == wrk_title) %>% select(titel_gids) %>% distinct()
   
   # plot_title <-paste0(cz_pgm_radar.a$pgm_title, " (", stats_data_flr() %>% str_extract(pattern = "\\d{4}-\\d{2}"), ")")
-  plot_title <- paste0(proper_pgm_title$titel_gids[[1]], " (", stats_data_flr() %>% str_extract(pattern = "\\d{4}-\\d{2}"), ")")
+  # plot_title <- paste0(proper_pgm_title$titel_gids[[1]], " (", stats_data_flr() %>% str_extract(pattern = "\\d{4}-\\d{2}"), ")")
+  plot_title <- paste0(proper_pgm_title$titel_gids[[1]], plot_cur_period)
   cz_pgm_radar.a %<>% select(-pgm_id, -pgm_title)
   
   cz_pgm_radar.b <- cz_pgm_radar.max %>% 

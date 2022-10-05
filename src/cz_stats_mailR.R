@@ -123,17 +123,30 @@ gm_auth(email = "cz.teamservice@gmail.com")
 cz_stats_msg_body_template <- "
 @aanhef
 
-Wat zal het worden? Een opsteker of een afknapper? 
-De kop in het zand of het hoofd in de wolken? 
-Ga je door de grond of door het dak? 
-
-Hier zijn de eerste cijfers.
+Dit is de volgende aflevering in de inhaalreeks.
 
 Met groet van CZ-teamservice,
 Lon
 "
 
 # send_loop_mail_to <- read_rds("rerun_emails.RDS")
+
+plot_cur_month <- cz_stats_cfg$`current-month` %>% str_sub(6, 7)
+plot_cur_period <- paste0(" (",
+                          case_when(plot_cur_month == "01" ~ "Jan. ",
+                                    plot_cur_month == "02" ~ "Feb. ",
+                                    plot_cur_month == "03" ~ "Mrt. ",
+                                    plot_cur_month == "04" ~ "Apr. ",
+                                    plot_cur_month == "05" ~ "Mei ",
+                                    plot_cur_month == "06" ~ "Jun. ",
+                                    plot_cur_month == "07" ~ "Jul. ",
+                                    plot_cur_month == "08" ~ "Aug. ",
+                                    plot_cur_month == "09" ~ "Sep. ",
+                                    plot_cur_month == "10" ~ "Okt. ",
+                                    plot_cur_month == "11" ~ "Nov. ",
+                                    TRUE ~ "Dec. "),
+                          cz_stats_cfg$`current-month` %>% str_sub(1, 4),
+                          ")")
 
 # create emails ----
 for (cur_mail_to in send_loop_mail_to$email) {
@@ -152,7 +165,7 @@ for (cur_mail_to in send_loop_mail_to$email) {
       # gm_to("vandenakker.info@xs4all.nl") %>%
       gm_to(cur_mail_to) %>%
       gm_from("cz.teamservice@concertzender.nl") %>%
-      gm_subject(paste0("CZ-luistercijfers, ", stats_data_flr() %>% str_extract(pattern = "\\d{4}-\\d{2}"))) %>%
+      gm_subject(paste0("CZ-luistercijfers", plot_cur_period)) %>%
       gm_text_body(cur_body)
       # gm_text_body(cur_body %>% str_replace("@cz_adres", cur_mail_to))
   
@@ -164,7 +177,7 @@ for (cur_mail_to in send_loop_mail_to$email) {
       cz_stats_msg <- cz_stats_msg %>% gm_attach_file(cur_png)
     }
     
-    cz_stats_msg <- cz_stats_msg %>% gm_attach_file("/home/lon/Documents/cz_stats_data/2022-04/diagrams/CZ-luistercijfers, alle kanalen.png")
+    cz_stats_msg <- cz_stats_msg %>% gm_attach_file(paste0(stats_data_flr(), "diagrams/CZ-luistercijfers, alle kanalen.png"))
     
     gm_send_message(cz_stats_msg)
     # gm_create_draft(cz_stats_msg)
