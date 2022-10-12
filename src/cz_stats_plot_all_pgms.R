@@ -16,7 +16,8 @@ source("src/prep_funcs.R", encoding = "UTF-8")
 suppressMessages( hrbrthemes::import_roboto_condensed())
 options(knitr.table.format = "html")
 
-cz_stats_pgm_report.2 <- read_rds(file = paste0(stats_data_flr(), "cz_licharod_stats_pgm_report.2.RDS"))
+cz_stats_pgm_report.2 <- read_rds(file = paste0(stats_data_flr(), "cz_licharod_stats_pgm_report.2.RDS")) %>% 
+  filter(pgm_title != "De kroniek van de nederlandse muziek")
 
 cz_pgm_radar.1 <- cz_stats_pgm_report.2 %>% 
   mutate(pgm_id = row_number(),

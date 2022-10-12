@@ -2,7 +2,6 @@
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(hrbrthemes))
 suppressPackageStartupMessages(library(kableExtra))
-# suppressPackageStartupMessages(library(streamgraph))
 suppressPackageStartupMessages(library(viridis))
 suppressPackageStartupMessages(library(DT))
 suppressPackageStartupMessages(library(plotly))
