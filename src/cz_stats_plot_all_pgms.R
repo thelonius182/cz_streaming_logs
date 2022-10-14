@@ -68,6 +68,9 @@ cz_stats_verzendlijst.1 <- read_delim("~/Downloads/Luistercijfers verzendlijst 2
   filter(deelnemer_actief == "j")
 
 # get pgm details ----
+# $#sleutels: titel_stats in GDrive/Luistercijfers verzendlijst 2.0/verzendlijst 
+#             moet overeenkomen met pgmTtle_clean in pgm_title_cleaner.tsv.
+#             Download de sheet opnieuw en herdraai dan in main: src/prep_stats_df_03A.R, -03B.R en -05.R
 cz_stats_by_pgm.1 <- read_rds(file = paste0(stats_data_flr(), "cz_licharod_stats_pgm_report.2.RDS")) %>% 
   filter(!is.na(hours_tot) & pgm_title %in% cz_stats_verzendlijst.1$titel_stats)
 

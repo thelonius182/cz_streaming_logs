@@ -127,6 +127,9 @@ Dit is de volgende aflevering in de inhaalreeks.
 
 Met groet van CZ-teamservice,
 Lon
+
+PS - door een probleem met onze geodata-leverancier,
+zijn de percentages buitenland niet volledig bekend.
 "
 
 # send_loop_mail_to <- read_rds("rerun_emails.RDS")

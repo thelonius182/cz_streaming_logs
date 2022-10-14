@@ -41,9 +41,9 @@ cz_reporting_stop <- ceiling_date(cz_reporting_day_one + ddays(1), unit = "month
 flog.info(paste0("selecting logs for ", cz_reporting_day_one_chr), name = "cz_stats_proc_log")
 
 # init stats directory
-stats_dir <- paste0(cz_stats_cfg$stats_data_home, str_sub(cz_reporting_day_one_chr, 1, 7))
+stats_flr <- paste0(cz_stats_cfg$stats_data_home, str_sub(cz_reporting_day_one_chr, 1, 7))
 
-if (!dir_exists(stats_dir)) {
+if (!dir_exists(stats_flr)) {
   dir_create(stats_flr)
   dir_create(paste0(stats_flr, "/diagrams"))
 }
