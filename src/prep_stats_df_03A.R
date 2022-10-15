@@ -44,7 +44,7 @@ cz_tzones_diffs.2 <- cz_tzones_diffs.1 %>%
 cz_stats_joined_03 <- cz_stats_joined_02 %>% 
   left_join(cz_tzones_diffs.2) %>% 
   mutate(cz_ts_local = if_else(is.na(cz_adj), cz_ts, cz_ts + cz_adj)) %>% 
-  select(-cz_ts, -time_zone, -cz_adj) %>% 
+  select(-time_zone, -cz_adj) %>% 
   filter(cz_ts_local >= cz_reporting_start & cz_ts_local <= cz_reporting_stop)
 
 # program titles ----

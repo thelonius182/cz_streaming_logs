@@ -2,7 +2,7 @@ cz_licharod_stats_joined_04 <- read_rds(file = paste0(stats_data_flr(), "cz_stat
 
 cz_licharod_stats_report.1 <- cz_licharod_stats_joined_04 %>% 
   mutate(cha_name = if_else(cha_name %in% c("Live", "RoD"), cha_name, "ThemeChannel"),
-    hour_of_day = hour(cz_ts_local),
+         hour_of_day = hour(cz_ts_local),
          pct_pgm_coverage = case_when(cz_length >= 2700 ~ 100,
                                       cz_length >= 1800 ~ 75,
                                       cz_length >= 900 ~ 50,
