@@ -196,11 +196,22 @@ source("src/prep_rod4.R", encoding = "UTF-8")
 # convert times to country local A ----
 source("src/prep_stats_df_03A.R", encoding = "UTF-8")
 
-# STOP HERE! check cz_stats_joined_04_missing ----
-# and update ~/Downloads/pgm_title_cleaner.tsv if ..missing isn't empty
+if(nrow(cz_stats_joined_04_missing) == 0) {
 
-# convert times to country local B ----
-source("src/prep_stats_df_03B.R", encoding = "UTF-8")
-
-# reports ----
-source("src/prep_stats_df_05.R", encoding = "UTF-8")
+  # convert times to country local B ----
+  source("src/prep_stats_df_03B.R", encoding = "UTF-8")
+  
+  # reports ----
+  source("src/prep_stats_df_05.R", encoding = "UTF-8")
+  source("src/cz_stats_plot_all_pgms.R", encoding = "UTF-8")
+  source("src/cz_stats_plot_all_channels.R", encoding = "UTF-8")
+  source("src/cz_stats_plot_hours_of_day_by_pgm.R", encoding = "UTF-8")
+  source("src/cz_stats_by_slot.R", encoding = "UTF-8")
+  
+  print("job completed successfully")
+  
+} else {
+  
+  print("update ~/Downloads/pgm_title_cleaner.tsv - 1 or more titles are missing.")
+  
+}

@@ -11,13 +11,19 @@ cz_stats_cfg <- read_yaml("config.yaml")
 # load functions ----
 source("src/prep_funcs.R", encoding = "UTF-8")
 
-# prep title list ----
-cz_stats_verzendlijst.mad <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - mailadressen.tsv",
-                                        delim = "\t", escape_double = FALSE,
-                                        trim_ws = TRUE,
-                                        show_col_types = FALSE) 
+# load verzendlijst ----
+source("src/get_google_czdata_stats.R", encoding = "UTF-8")
 
-cz_stats_mailaddress_salutation <- cz_stats_verzendlijst.mad %>% select(email, aanhef) %>% distinct()
+# cz_stats_verzendlijst.mad <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - mailadressen.tsv",
+#                                         delim = "\t", escape_double = FALSE,
+#                                         trim_ws = TRUE,
+#                                         show_col_types = FALSE) 
+
+# prep title list ----
+cz_stats_mailaddress_salutation <- tbl_stats_vzl_lst %>% 
+  filter(deelnemer_actief) %>% 
+  inner_join(tbl_stats_vzl_mad) %>% 
+  select(email, aanhef) %>% distinct() 
 
 # connect to gmail ----
 gm_auth_configure(path = "cz-studiomails.json")
@@ -62,33 +68,9 @@ for (cur_mailaddress in cz_stats_mailaddress_salutation$email) {
       gm_subject("Binnenkort in dit theater - Het Exacte Verhaal") %>%
       gm_text_body(cur_body)
     
-    cz_stats_msg <- cz_stats_msg %>% gm_attach_file("/home/lon/Downloads/Het exacte verhaal.pdf")
+    # cz_stats_msg <- cz_stats_msg %>% gm_attach_file("/home/lon/Downloads/Het exacte verhaal.pdf")
     
     # gm_create_draft(cz_stats_msg)
     gm_send_message(cz_stats_msg)
   }
 }
-
-# 
-# test_email <-
-#   gm_mime() %>%
-#   gm_to("vandenakker.info@xs4all.nl") %>%
-#   gm_from("cz.teamservice@gmail.com") %>%
-#   gm_subject("this is just a gmailr test") %>%
-#   gm_text_body("Can you hear me now?")
-# 
-# # Verify it looks correct
-# gm_create_draft(test_email)
-# 
-# # If all is good with your draft, then you can send it
-# gm_send_message(test_email)
-# # You can add a file attachment to your message with gm_attach_file().
-# 
-# write.csv(mtcars,"mtcars.csv")
-# test_email <- test_email %>% gm_attach_file("/home/lon/Documents/cz_stats_data/2022-04/diagrams/Nuove musiche.png")
-# 
-# # Verify it looks correct
-# gm_create_draft(test_email)
-# 
-# # If so, send it
-# gm_send_message(test_email)

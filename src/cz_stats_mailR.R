@@ -11,12 +11,15 @@ cz_stats_cfg <- read_yaml("config.yaml")
 # load functions ----
 source("src/prep_funcs.R", encoding = "UTF-8")
 
+# load verzendlijst ----
+source("src/get_google_czdata_stats.R", encoding = "UTF-8")
+
 # prep title list ----
-cz_stats_verzendlijst.tpt <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - themakanalen-per-titel.tsv",
-                                      delim = "\t", escape_double = FALSE,
-                                      trim_ws = TRUE,
-                                      quote = "",
-                                      show_col_types = FALSE) 
+# cz_stats_verzendlijst.tpt <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - themakanalen-per-titel.tsv",
+#                                       delim = "\t", escape_double = FALSE,
+#                                       trim_ws = TRUE,
+#                                       quote = "",
+#                                       show_col_types = FALSE) 
  
 # tpt_dft.1 <- cz_stats_verzendlijst.tpt %>% 
 #   select(titel_gids) %>% distinct() %>% 
@@ -29,25 +32,26 @@ cz_stats_verzendlijst.tpt <- read_delim("~/Downloads/Luistercijfers verzendlijst
 # cz_stats_verzendlijst.tpt.1 <-
 #   cz_stats_verzendlijst.tpt %>% bind_rows(tpt_dft.1) %>% bind_rows(tpt_dft.2) %>% arrange(titel_gids, themakanaal)
   
-cz_stats_verzendlijst.tpt.list <- cz_stats_verzendlijst.tpt %>% 
+cz_stats_verzendlijst.tpt.list <- tbl_stats_vzl_tpt %>% 
   select(-greenhost_stream) %>% 
   group_by(titel_gids) %>% 
   mutate(grp = row_number())
 
-cz_stats_verzendlijst.mad <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - mailadressen.tsv",
-                                      delim = "\t", escape_double = FALSE,
-                                      trim_ws = TRUE,
-                                      quote = "",
-                                      show_col_types = FALSE) 
+# cz_stats_verzendlijst.mad <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - mailadressen.tsv",
+#                                       delim = "\t", escape_double = FALSE,
+#                                       trim_ws = TRUE,
+#                                       quote = "",
+#                                       show_col_types = FALSE) 
 
-cz_stats_verzendlijst.vzl <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
-                                      delim = "\t", escape_double = FALSE,
-                                      trim_ws = TRUE,
-                                      quote = "",
-                                      show_col_types = FALSE) %>% 
-  filter(deelnemer_actief == "j") %>% 
+cz_stats_verzendlijst.vzl <- tbl_stats_vzl_lst %>% 
+# cz_stats_verzendlijst.vzl <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
+#                                       delim = "\t", escape_double = FALSE,
+#                                       trim_ws = TRUE,
+#                                       quote = "",
+#                                       show_col_types = FALSE) %>% 
+  filter(deelnemer_actief) %>% 
   select(-deelnemer_actief, -live_stream_tonen) %>% 
-  left_join(cz_stats_verzendlijst.mad)
+  left_join(tbl_stats_vzl_mad)
 
 # get start from config file----
 fmt_cz_month <- stamp("202112", orders = "%y%0m", quiet = T)
@@ -128,7 +132,7 @@ Dit is de volgende aflevering in de inhaalreeks.
 Met groet van CZ-teamservice,
 Lon
 
-PS - door een probleem met onze geodata-leverancier,
+PS - door een nog steeds aanhoudend probleem met onze geodata-leverancier, 
 zijn de percentages buitenland niet volledig bekend.
 "
 

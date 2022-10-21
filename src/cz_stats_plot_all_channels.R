@@ -43,14 +43,14 @@ lolli.1a <- cz_stats_report.1 %>%
   summarise(cz_totaal = round(sum(cz_length) / 3600L)) %>% 
   arrange(cz_totaal) %>% 
   mutate(cha_name = factor(cha_name, unique(cha_name)),
-         cz_group = "Uren")
+         cz_group = factor("Uren"))
 
 lolli.1b <- cz_stats_report.1 %>% 
   group_by(cha_name) %>% 
   summarise(cz_totaal = n()) %>% 
   arrange(cz_totaal) %>% 
   mutate(cha_name = factor(cha_name, unique(cha_name)),
-         cz_group = "Sessies")
+         cz_group = factor("Sessies"))
 
 lolli.1c <- cz_stats_report.1 %>% 
   select(cha_name, cz_ipa) %>% distinct() %>% 
@@ -58,7 +58,7 @@ lolli.1c <- cz_stats_report.1 %>%
   summarise(cz_totaal = n()) %>% 
   arrange(cz_totaal) %>% 
   mutate(cha_name = factor(cha_name, unique(cha_name)),
-         cz_group = "Luisteraars")
+         cz_group = factor("Luisteraars"))
 
 lolli.1 <- lolli.1a %>% bind_rows(lolli.1b) %>% bind_rows(lolli.1c) %>% 
   filter(cz_totaal > 750) 
@@ -111,8 +111,8 @@ olot <- ggplot( data = lolli.2,
   geom_segment( aes(x = cha_name, xend = cha_name,
                     y = 0, yend = cz_totaal),
                 color = "grey") +
-  geom_point( aes(x = cha_name, y = cz_totaal),
-              size = 3, alpha = 0.8) +
+  geom_point( aes(x = cha_name, y = cz_totaal, shape = cz_group),
+              size = 3, alpha = 0.8, stroke = 2, fill = 2) +
   # geom_text( aes(x = cha_name, y = cz_totaal, label = format(cz_totaal, big.mark = ".", decimal.mark = ",")), 
   geom_text( aes(x = cha_name, y = cz_totaal, label = cz_totaal_si), 
              hjust = -0.35,
@@ -157,7 +157,10 @@ olot <- ggplot( data = lolli.2,
        subtitle = paste0("unieke luisteraars (totaal) = ",
                          format(round(n_devices_month, digits = -2), big.mark = ".", decimal.mark = ","))
   ) +
-  scale_color_manual(values = c('#29AF7FFF', 'red', "#440154FF")) 
+  scale_color_manual(values = c('#D55E00FF', '#0072B2FF', "#F0E442FF"))
+  # scale_color_manual(values = c('#E69F00FF', '#0072B2FF', "#CC79A7FF")) 
+  # c("#999999", "#E69F00", "#56B4E9", "#009E73", 
+  #   "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 ggsave(
   plot = olot,

@@ -13,31 +13,36 @@ cz_stats_cfg <- read_yaml("config.yaml")
 # load functions ----
 source("src/prep_funcs.R", encoding = "UTF-8")
 
-# prep title list ----
-cz_stats_verzendlijst.tpt <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - themakanalen-per-titel.tsv",
-                                        delim = "\t", escape_double = FALSE,
-                                        trim_ws = TRUE,
-                                        quote = "",
-                                        show_col_types = FALSE) 
+# load verzendlijst ----
+source("src/get_google_czdata_stats.R", encoding = "UTF-8")
 
-tpt_dft.1 <- cz_stats_verzendlijst.tpt %>% 
+# prep title list ----
+# cz_stats_verzendlijst.tpt <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - themakanalen-per-titel.tsv",
+#                                         delim = "\t", escape_double = FALSE,
+#                                         trim_ws = TRUE,
+#                                         quote = "",
+#                                         show_col_types = FALSE) 
+
+tpt_dft.1 <- tbl_stats_vzl_tpt %>% 
   select(titel_gids, themakanaal) %>% distinct() 
 
-rod_all <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
-                      delim = "\t", escape_double = FALSE,
-                      trim_ws = TRUE,
-                      quote = "",
-                      show_col_types = FALSE) %>% 
-  filter(deelnemer_actief == "j") %>% 
+rod_all <- tbl_stats_vzl_lst %>% 
+# rod_all <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
+#                       delim = "\t", escape_double = FALSE,
+#                       trim_ws = TRUE,
+#                       quote = "",
+#                       show_col_types = FALSE) %>% 
+  filter(deelnemer_actief) %>% 
   select(titel_gids) %>% distinct() %>% 
   mutate(themakanaal = "Radio on Demand")
 
-live_stream_tonen <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
-                                delim = "\t", escape_double = FALSE,
-                                trim_ws = TRUE,
-                                quote = "",
-                                show_col_types = FALSE) %>% 
-  filter(deelnemer_actief == "j" & live_stream_tonen == "j") %>% 
+live_stream_tonen <- tbl_stats_vzl_lst %>% 
+# live_stream_tonen <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
+#                                 delim = "\t", escape_double = FALSE,
+#                                 trim_ws = TRUE,
+#                                 quote = "",
+#                                 show_col_types = FALSE) %>% 
+  filter(deelnemer_actief & live_stream_tonen) %>% 
   select(titel_gids) %>% arrange(titel_gids) %>% distinct()
 
 tpt_dft.2 <- rod_all %>% 
@@ -46,7 +51,7 @@ tpt_dft.2 <- rod_all %>%
   mutate(themakanaal = "Live")
 
 cz_stats_verzendlijst.tpt.1 <-
-  cz_stats_verzendlijst.tpt %>% 
+  tbl_stats_vzl_tpt %>% 
   bind_rows(tpt_dft.1) %>% 
   bind_rows(rod_all) %>% 
   bind_rows(tpt_dft.2) %>% 
@@ -111,7 +116,7 @@ for (titel in chas_by_pgm$titel_gids) {
             size = 0.5,
             alpha = 0.5
           ) +
-          geom_line(aes(color = cha_name), color = "#69b3a2", size = 1.2) +
+          geom_line(aes(color = cha_name), color = "#0072B2", size = 1.2) +
           scale_color_viridis(discrete = TRUE) +
           theme_ipsum() +
           theme(

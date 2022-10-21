@@ -13,6 +13,9 @@ cz_stats_cfg <- read_yaml("config.yaml")
 # load functions ----
 source("src/prep_funcs.R", encoding = "UTF-8")
 
+# load verzendlijst ----
+source("src/get_google_czdata_stats.R", encoding = "UTF-8")
+
 suppressMessages( hrbrthemes::import_roboto_condensed())
 options(knitr.table.format = "html")
 
@@ -56,16 +59,19 @@ cz_pgm_radar.mean <- cz_pgm_radar.1 %>%
 cz_pgm_radar.min <- rep(0, 15)
 names(cz_pgm_radar.min) <- names(cz_pgm_radar.max)
 
-colors_border=c( rgb(0.2,0.5,0.5,0.9), rgb(0.8,0.2,0.5,0.9) , rgb(0.7,0.5,0.1,0.9) )
-colors_in=c( rgb(0.2,0.5,0.5,0.4), rgb(0.8,0.2,0.5,0.4) , rgb(0.7,0.5,0.1,0.4) )
+# colors_border = c( rgb(0.2,0.5,0.5,0.9), rgb(0.8,0.2,0.5,0.9) , rgb(0.7,0.5,0.1,0.9) )
+colors_border = c(rgb(69/255, 96/255, 1, 1), rgb(1, 204/255, 63/255, 0.9), rgb(1, 48/255, 180/255, 0.9))
+# colors_in =     c( rgb(0.2,0.5,0.5,0.4), rgb(0.8,0.2,0.5,0.4) , rgb(0.7,0.5,0.1,0.4) )
+colors_in =     c(rgb(0, 37/255, 1, 0.2), rgb(196/255, 176/255, 18/255, 0.1), rgb(140/255, 27/255, 49/255, 0.1)) 
 
 # prep title list ----
-cz_stats_verzendlijst.1 <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
-                                      delim = "\t", escape_double = FALSE,
-                                      trim_ws = TRUE,
-                                      quote = "",
-                                      show_col_types = FALSE) %>% 
-  filter(deelnemer_actief == "j")
+cz_stats_verzendlijst.1 <- tbl_stats_vzl_lst %>% 
+# cz_stats_verzendlijst.1 <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
+#                                       delim = "\t", escape_double = FALSE,
+#                                       trim_ws = TRUE,
+#                                       quote = "",
+#                                       show_col_types = FALSE) %>% 
+  filter(deelnemer_actief)
 
 # get pgm details ----
 # $#sleutels: titel_stats in GDrive/Luistercijfers verzendlijst 2.0/verzendlijst 
@@ -151,7 +157,7 @@ for (wrk_title in cz_stats_titles$pgm_title) {
     legend = c("dit programma", "gemiddelde CZ"),
     bty = "n",
     pch = 20 ,
-    col = colors_in ,
+    col = colors_border,
     text.col = "black",
     cex = 1.65,
     pt.cex = 5
