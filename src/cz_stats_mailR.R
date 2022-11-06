@@ -127,13 +127,10 @@ gm_auth(email = "cz.teamservice@gmail.com")
 cz_stats_msg_body_template <- "
 @aanhef
 
-Dit is de volgende aflevering in de inhaalreeks.
+Dit zijn de nieuwste cijfers - bij vragen weet je me te vinden!
 
-Met groet van CZ-teamservice,
+Met groet,
 Lon
-
-PS - door een nog steeds aanhoudend probleem met onze geodata-leverancier, 
-zijn de percentages buitenland niet volledig bekend.
 "
 
 # send_loop_mail_to <- read_rds("rerun_emails.RDS")

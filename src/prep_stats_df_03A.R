@@ -1,9 +1,12 @@
-library(readr)
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_stats_proc_log")
+
+cz_stats_cfg <- read_yaml("config.yaml")
+
+source("src/prep_funcs.R", encoding = "UTF-8")
 
 cz_stats_rod.10 <- read_rds(file = paste0(stats_data_flr(), "cz_stats_rod.10.RDS")) # from prep_rod4.R
 cz_stats_cha_08 <- read_rds(file = paste0(stats_data_flr(), "cz_stats_cha_08.RDS")) # from prep8.R
-cz_ipa_geo_full <- read_rds(file = "cz_ipa_geo_full.RDS") # from prep_stats_df_02.R (renewed)
+cz_ipa_geo_full <- read_rds(file = paste0(cz_stats_cfg$ws_geodata_home, "cz_ipa_geo_full.RDS")) # from ws_geodata.R
 
 cz_stats_joined_01 <- cz_stats_cha_08 %>% 
   bind_rows(cz_stats_rod.10) %>% 
@@ -84,7 +87,21 @@ names(cz_pgm_titles_fixed.1) <- c("pgm_title", "pgm_title_fixed")
 cz_stats_joined_04 <- cz_stats_joined_03 %>% 
   left_join(cz_pgm_titles_fixed.1, by = c("pgm_title" = "pgm_title"))
 
+# signal missing titles
 cz_stats_joined_04_missing <- cz_stats_joined_04 %>% filter(is.na(pgm_title_fixed))
+
+if (nrow(cz_stats_joined_04_missing) > 0) {
+  
+  # disregard if missing hours is low
+  hrs_missing <- sum(cz_stats_joined_04_missing$cz_length) / 3600
+  
+  if (hrs_missing < 12) {
+    cz_stats_joined_04 %<>% filter(!is.na(pgm_title_fixed))
+    
+    # clear this so main.R can continue
+    cz_stats_joined_04_missing %<>% filter(!is.na(pgm_title_fixed))
+  }
+}
 
 write_rds(x = cz_stats_joined_04,
           file = paste0(stats_data_flr(), "cz_stats_joined_04.RDS"),

@@ -93,3 +93,5 @@ geo_response_dft.RDS
 rerun_emails.RDS
 caroussel.old
 .secrets
+req_stock_tib.RDS
+caroussel.very_old

@@ -57,7 +57,7 @@ cz_stats_cha.03 <- cz_stats_cha.02 %>%
     lg_channel_idx,
     lg_channel,
     lg_cz_ts,
-    # actually, we don need bytes; Triton uses session length
+    # actually, we don't need bytes; Triton uses session length
     # lg_n_bytes,
     lg_session_length,
     lg_referrer,

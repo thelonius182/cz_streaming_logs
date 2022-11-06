@@ -4,6 +4,7 @@
 # Version 0.1 - 2021-05-01, SJ/LA
 # Version 0.2 - 2021-08-19, SJ/LA
 # Version 1.0 - 2022-03-21, SJ/LA
+# Version 2.0 - 2022-10-22, SJ/LA
 #
 # Docs: docs.google.com/document/d/1vrwVwDFrxYJvcjXKxJkF7_R1uNgIE7T2KDOfPx_YIn8
 #
@@ -98,18 +99,22 @@ write_rds(x = salsa_stats_all_pgms.1,
 # Built by query on Nipper-pc, exported as .csv
 # C:\Users\nipper\Documents\cz_queries\themakanalen_2.sql
 suppressWarnings(
-  themakanalen_listed_raw <- read_csv("~/Downloads/themakanalen_listed.csv")
+  # themakanalen_listed_raw <- read_csv("~/Downloads/themakanalen_listed.csv")
+  
+  themakanalen_listed_raw <- read_delim("~/Downloads/themakanalen_listed.txt",
+                                        delim = "\t", escape_double = FALSE,
+                                        trim_ws = TRUE, quote = "", show_col_types = F)
 )
 
 # get current TC-programs ----
 # Built by query on Nipper-pc, exported as themakanalen_current_pgms.csv
 # C:\Users\nipper\Documents\cz_queries\themakanalen.sql
 # "current" means "for this reporting period"!
-cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms.csv"
+cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms.txt"
 cur_pgms_snapshot.1 <-
   read_delim(cur_pgms_snapshot_filename, 
-             delim = ",",
-             quote = "")
+             delim = "\t",escape_double = FALSE,
+             trim_ws = TRUE, quote = "", show_col_types = F)
 pgms_snapshot_info <- file_info(cur_pgms_snapshot_filename)
 cur_pgms_snapshot <- cur_pgms_snapshot.1 %>% 
   mutate(ts_snapshot = pgms_snapshot_info$modification_time)
@@ -190,8 +195,7 @@ source("src/prep_rod4.R", encoding = "UTF-8")
 # tmp_channels <- cz_stats_cha_08 %>% select(cz_cha_id, cha_name) %>% filter(is.na(cha_name)) %>% distinct()
 
 # collect geo-data ----
-# skip until Sem finds his credit card
-# source("src/prep_stats_df_02.R", encoding = "UTF-8")
+source("src/ws_geodata.R", encoding = "UTF-8")
 
 # convert times to country local A ----
 source("src/prep_stats_df_03A.R", encoding = "UTF-8")
@@ -212,6 +216,6 @@ if(nrow(cz_stats_joined_04_missing) == 0) {
   
 } else {
   
-  print("update ~/Downloads/pgm_title_cleaner.tsv - 1 or more titles are missing.")
+  print("job aborted - one or more titles are missing. Check tibble cz_stats_joined_04_missing")
   
 }
