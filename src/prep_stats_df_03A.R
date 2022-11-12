@@ -74,6 +74,7 @@ cz_stats_joined_03 <- cz_stats_joined_02 %>%
 # write_delim(pgm_titles_unique, file = "~/Downloads/pgm_title_cleaner_20220402.tsv", delim = "\t")
 
 # In ieder geval wel deze doen!
+# vertaalsleutel programmatitels: "pgm_title_fixed" in de csv == "titel_stats" in de GD-verzendlijst
 cz_pgm_titles_fixed.1 <- read_delim("~/Downloads/pgm_title_cleaner.tsv",
   delim = "\t",
   escape_double = FALSE,

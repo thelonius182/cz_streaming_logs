@@ -96,7 +96,7 @@ cur_pgms_w_editor <- salsa_stats_all_pgms_w_editor %>%
 # init mailinglist cur month ----
 cur_pgms_vzl <- cur_pgms_w_editor %>% 
   left_join(cz_stats_verzendlijst.vzl, by = c("pgmTitle" = "titel_gids")) %>% 
-  mutate(matching_editor = str_detect(post_editor, wie)) %>% 
+  mutate(matching_editor = str_detect(tolower(post_editor), tolower(wie))) %>% 
   filter(matching_editor) %>% 
   select(-post_editor, -matching_editor) %>% distinct() %>% 
   group_by(titel_stats, wie) %>% mutate(tsw = row_number()) %>% 
@@ -127,7 +127,7 @@ gm_auth(email = "cz.teamservice@gmail.com")
 cz_stats_msg_body_template <- "
 @aanhef
 
-Dit zijn de nieuwste cijfers - bij vragen weet je me te vinden!
+Nieuwe cijfers, vers van de pers - als er vragen zijn, stel ze gerust!
 
 Met groet,
 Lon
