@@ -83,7 +83,8 @@ salsa_stats_all_pgms.1 <- salsa_stats_all_pgms_raw %>%
     tbh.start = ymd_h(pgmStart, tz = "Europe/Amsterdam"),
     tbh.stop = ymd_h(pgmStop, tz = "Europe/Amsterdam"),
     tbh.secs = int_length(interval(tbh.start, tbh.stop)),
-    tbh.title = str_replace(pgmTitle, "&amp;", "&")
+    tbh.title = str_replace(pgmTitle, "&amp;", "&"),
+    tbh.editor = post_editor
   ) %>%
   select(starts_with("tbh.")) %>% 
   filter(tbh.secs > 0)

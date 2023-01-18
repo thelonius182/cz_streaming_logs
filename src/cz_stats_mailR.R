@@ -83,6 +83,7 @@ cur_pgms_w_editor <- salsa_stats_all_pgms_w_editor %>%
                               pgmTitle == "Framework 1" ~ "Framework",
                               pgmTitle == "Framework 2" ~ "Framework",
                               pgmTitle == "Missa etcetera" ~ "Missa Etcetera",
+                              pgmTitle == "Dwarsliggers &amp; Buitenbeentjes" ~ "Dwarsliggers & Buitenbeentjes",
                               pgmTitle == "Dansen en de blues" ~ "Dansen en de Blues",
                               TRUE ~ pgmTitle),
          post_editor = case_when(post_editor == "Framework" ~ "Hessel Veldman",
@@ -97,7 +98,7 @@ cur_pgms_w_editor <- salsa_stats_all_pgms_w_editor %>%
 cur_pgms_vzl <- cur_pgms_w_editor %>% 
   left_join(cz_stats_verzendlijst.vzl, by = c("pgmTitle" = "titel_gids")) %>% 
   mutate(matching_editor = str_detect(tolower(post_editor), tolower(wie))) %>% 
-  filter(matching_editor) %>% 
+  filter(matching_editor | post_editor == "Redactie Concertzender Actueel") %>% 
   select(-post_editor, -matching_editor) %>% distinct() %>% 
   group_by(titel_stats, wie) %>% mutate(tsw = row_number()) %>% 
   ungroup() %>% filter(tsw == 1) %>% select(-tsw)
@@ -127,7 +128,7 @@ gm_auth(email = "cz.teamservice@gmail.com")
 cz_stats_msg_body_template <- "
 @aanhef
 
-Nieuwe cijfers, vers van de pers - als er vragen zijn, stel ze gerust!
+Nieuwe cijfers! 
 
 Met groet,
 Lon

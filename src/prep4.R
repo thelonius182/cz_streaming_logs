@@ -29,6 +29,7 @@ cur_month <- interval(cz_reporting_start, cz_reporting_stop, tzone = "Europe/Ams
 
 cz_stats_cha.04 <- cz_stats_cha.03 %>% 
   # + filter: TD-3.1 ----
+  # keep everyting with no referrer, or with a referrer that is non-CZ-internal 
   filter(is.na(lg_referrer) | !str_starts(lg_referrer, "^192.168")
   ) %>% 
   # + filter: TD-3.2 ----

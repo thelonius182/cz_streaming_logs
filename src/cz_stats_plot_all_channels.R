@@ -60,8 +60,8 @@ lolli.1c <- cz_stats_report.1 %>%
   mutate(cha_name = factor(cha_name, unique(cha_name)),
          cz_group = factor("Luisteraars"))
 
-lolli.1 <- lolli.1a %>% bind_rows(lolli.1b) %>% bind_rows(lolli.1c) %>% 
-  filter(cz_totaal > 750) 
+lolli.1 <- lolli.1a %>% bind_rows(lolli.1b) %>% bind_rows(lolli.1c) # %>% 
+  # filter(cz_totaal > 750) 
 
 lolli.2 <- NULL
 
