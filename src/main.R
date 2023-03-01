@@ -213,10 +213,14 @@ if(nrow(cz_stats_joined_04_missing) == 0) {
   source("src/cz_stats_plot_hours_of_day_by_pgm.R", encoding = "UTF-8")
   source("src/cz_stats_by_slot.R", encoding = "UTF-8")
   
-  print("job completed successfully")
+  print("------------------ job completed successfully")
   
 } else {
   
-  print("job aborted - one or more titles are missing. Check tibble cz_stats_joined_04_missing")
+  print("------------------ job aborted - one or more titles are missing. Check tibble cz_stats_joined_04_missing")
+  # vereiste match: GD-spreadsheet Luistercijfers verzendlijst 2.0 > verzendlijst > titel_stats 
+  #            met: pgm_title_cleaner.tsv > pgmTtle_clean
+  #
+  # Na wijzigingen: herdraai het laatste stuk van main, dwz alles vanaf prep_stats_df_03A.R
   
 }

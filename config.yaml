@@ -1,4 +1,4 @@
-current-month: 2022-12-01 00:00:00
+current-month: 2023-01-01 00:00:00
 stats_data_home: /home/lon/Documents/cz_stats_data/
 cz_rds_store_ubu: /home/lon/cz_rds_store/cz_gdrive/
 ws_geodata_home: /home/lon/Documents/cz_streaming_logs/
@@ -9,4 +9,4 @@ url_pfx: docs.google.com/spreadsheets/d/
 url_roosters: 1zt4xR9non3vIus4A9gVvk15HTMAunPBGywMOtAMI-0U
 url_stats_verzendlijst: 1-uzfYzF2tydiFFOxBoAef4LLmHA_S51yqK1CgcJmpzM
 
-modelrooster_versie: 20220113
+modelrooster_versie: 20230105
