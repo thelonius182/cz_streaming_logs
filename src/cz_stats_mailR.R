@@ -92,7 +92,8 @@ cur_pgms_w_editor <- salsa_stats_all_pgms_w_editor %>%
   add_row(tibble(pgmTitle = "Acoustic Moods", post_editor = "Hans Meerman")) %>% 
   add_row(tibble(pgmTitle = "Acoustic Roots", post_editor = "Hans Meerman")) %>% 
   add_row(tibble(pgmTitle = "Bach en Co", post_editor = "Hans Meerman")) %>% 
-  add_row(tibble(pgmTitle = "Geen dag zonder Bach", post_editor = "Hans Meerman")) 
+  add_row(tibble(pgmTitle = "Geen dag zonder Bach", post_editor = "Hans Meerman")) %>% 
+  add_row(tibble(pgmTitle = "¡Mambo!", post_editor = "Peter van Cooten")) 
 
 # init mailinglist cur month ----
 cur_pgms_vzl <- cur_pgms_w_editor %>% 
