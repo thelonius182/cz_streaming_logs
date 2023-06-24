@@ -89,6 +89,7 @@ caroussel.9 <- caroussel.8 %>%
 rm(caroussel.8)
 
 # join stats info and caroussel ----
+cz_stats_cha_05 <- read_rds(file = paste0(stats_data_flr(), "cz_stats_cha_05.RDS"))
 cz_stats_cha_07 <- cz_stats_cha_05 %>% 
   left_join(caroussel.9, by = c("cz_cha_id" = "cha_id", "cz_ts" = "sbh.ts"))
 

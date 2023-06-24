@@ -1,12 +1,5 @@
-suppressPackageStartupMessages(library(tidyverse))
-suppressPackageStartupMessages(library(magrittr))
-suppressPackageStartupMessages(library(lubridate))
-suppressPackageStartupMessages(library(viridis))
-suppressPackageStartupMessages(library(ggplot2))
-suppressPackageStartupMessages(library(hrbrthemes))
-suppressPackageStartupMessages(library(yaml))
-suppressPackageStartupMessages(library(sitools))
-suppressPackageStartupMessages(library(fs))
+pacman::p_load(magrittr, tidyr, dplyr, stringr, readr, lubridate, fs, futile.logger, curlconverter,
+               jsonlite, httr, yaml, ssh, googledrive, viridis, ggplot2, hrbrthemes, yaml, sitools)
 
 suppressMessages( hrbrthemes::import_roboto_condensed())
 cz_stats_cfg <- read_yaml("config.yaml")

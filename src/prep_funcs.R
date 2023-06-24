@@ -195,7 +195,7 @@ stage_caroussel <- function() {
            key_tk.3hh = str_sub(key_tk.2, 10, 11),
            key_tk.3mm = str_sub(key_tk.2, 12, 13),
            itm_5 = as.integer(itm_5)) %>% 
-    na_if("") %>% 
+    mutate_all(~ifelse(. == "", NA, .)) %>%
     mutate(key_tk.3mm = if_else(is.na(key_tk.3mm), "00", key_tk.3mm)) %>% 
     filter(itm_1 != "total" 
            & !str_starts(itm_1, "d")
@@ -585,4 +585,49 @@ f2si2 <- function (number, rounding = F)
     sistring <- as.character(number)
   }
   return(sistring)
+}
+
+# get reamining GEO-queries at MaxMind
+queries_remaining <- function(arg_creds) {
+  
+  # use an arbitrary, exisiting IP-address. The response includes the number of remaining queries
+  ip_request <- "https://geoip.maxmind.com/geoip/v2.1/city/1.164.216.28?pretty"
+  request_sts <- try(mm_response <- GET(url = ip_request,
+                                        authenticate(arg_creds$account_id, 
+                                                     arg_creds$license_key)))
+  # service-error
+  if (attr(request_sts, "class") == "try-error" | mm_response$status_code != 200) {
+    return(NULL)
+  } 
+  
+  # retrieve the response content
+  response_content <- content(mm_response, as = "parsed", type = "application/json")
+  
+  # parse the response content
+  parsing_sts <- try(parsed_response <-
+                       response_content %>% as.data.frame() %>% as_tibble() %>%
+                       pivot_longer(
+                         cols = contains("names.en") |
+                           (contains("code") &
+                              !contains("metro")),
+                         names_to = "key",
+                         values_to = "value"
+                       ) %>%
+                       select(
+                         lat = location.latitude,
+                         lng = location.longitude,
+                         stats_tz = location.time_zone,
+                         queries_remaining,
+                         key,
+                         value
+                       ))
+  
+  # service-error
+  if ("try-error" %in% attr(parsing_sts, "class")) {
+    retrun(NULL)
+  } 
+  
+  # return queries remaining
+  n_req_stock_tib <- parsed_response %>% select(n = queries_remaining) 
+  return(n_req_stock_tib$n[[1]])
 }

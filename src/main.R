@@ -10,19 +10,8 @@
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-suppressPackageStartupMessages(library(magrittr))
-suppressPackageStartupMessages(library(tidyr))
-suppressPackageStartupMessages(library(dplyr))
-suppressPackageStartupMessages(library(stringr))
-suppressPackageStartupMessages(library(readr))
-suppressPackageStartupMessages(library(lubridate))
-suppressPackageStartupMessages(library(fs))
-suppressPackageStartupMessages(library(futile.logger))
-suppressPackageStartupMessages(library(curlconverter))
-suppressPackageStartupMessages(library(jsonlite))
-suppressPackageStartupMessages(library(httr))
-suppressPackageStartupMessages(library(yaml))
-suppressPackageStartupMessages(library(ssh))
+pacman::p_load(magrittr, tidyr, dplyr, stringr, readr, lubridate, fs, futile.logger, curlconverter,
+               jsonlite, httr, yaml, ssh, googledrive)
 
 # init logger ----
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_stats_proc_log")
@@ -30,6 +19,9 @@ fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_
 # load functions ----
 # has func defs only
 source("src/prep_funcs.R", encoding = "UTF-8")
+
+# download wp-files from GD
+source("src/download_wpfiles.R", encoding = "UTF-8")
 
 cz_stats_cfg <- read_yaml("config.yaml")
 
@@ -99,13 +91,19 @@ write_rds(x = salsa_stats_all_pgms.1,
 # get theme channel (TC) playlists ----
 # Built by query on Nipper-pc, exported as .csv
 # C:\Users\nipper\Documents\cz_queries\themakanalen_2.sql
-suppressWarnings(
-  # themakanalen_listed_raw <- read_csv("~/Downloads/themakanalen_listed.csv")
+# themakanalen_listed_raw <- read_csv("~/Downloads/themakanalen_listed.csv")
   
-  themakanalen_listed_raw <- read_delim("~/Downloads/themakanalen_listed.txt",
-                                        delim = "\t", escape_double = FALSE,
-                                        trim_ws = TRUE, quote = "", show_col_types = F)
-)
+themakanalen_listed_raw <-
+  read_delim(
+    "~/Downloads/themakanalen_listed.txt",
+    delim = "\t",
+    escape_double = FALSE,
+    locale = locale(encoding = "ISO-8859-1"),
+    trim_ws = TRUE,
+    quote = "",
+    show_col_types = F,
+    lazy = F
+  )
 
 # get current TC-programs ----
 # Built by query on Nipper-pc, exported as themakanalen_current_pgms.csv
@@ -188,9 +186,9 @@ source("src/prep_rod4.R", encoding = "UTF-8")
 
 # tmp_titles <- cz_stats_rod.10 %>% select(cz_title) %>% distinct()
 # 
-# tmp_titles_cha <- cz_stats_cha_08 %>% select(pgm_title, cz_cha_id, cha_name, cz_length) %>% 
-#   group_by(pgm_title, cz_cha_id, cha_name) %>% 
-#   summarise(sum_seconds = sum(cz_length)) %>% 
+# tmp_titles_cha <- cz_stats_cha_08 %>% select(pgm_title, cz_cha_id, cha_name, cz_length) %>%
+#   group_by(pgm_title, cz_cha_id, cha_name) %>%
+#   summarise(sum_seconds = sum(cz_length)) %>%
 #   mutate(sum_hours = round(sum_seconds / 3600, 1))
 # 
 # tmp_channels <- cz_stats_cha_08 %>% select(cz_cha_id, cha_name) %>% filter(is.na(cha_name)) %>% distinct()

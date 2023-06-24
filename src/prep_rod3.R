@@ -80,7 +80,7 @@ rod_audio_full.1 <- rod_audio_full %>%
     key_tk.3mm = str_sub(key_tk.2, 12, 13),
     itm_5 = as.integer(itm_5)
   ) %>%
-  na_if("") %>%
+  mutate_all(~ifelse(. == "", NA, .)) %>%
   mutate(key_tk.3mm = if_else(is.na(key_tk.3mm), "00", key_tk.3mm)) %>%
   filter(
     itm_1 != "total"

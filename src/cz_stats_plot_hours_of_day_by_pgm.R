@@ -1,11 +1,6 @@
-# Libraries
-suppressPackageStartupMessages(library(tidyverse))
-suppressPackageStartupMessages(library(hrbrthemes))
-suppressPackageStartupMessages(library(kableExtra))
-suppressPackageStartupMessages(library(viridis))
-suppressPackageStartupMessages(library(DT))
-suppressPackageStartupMessages(library(plotly))
-suppressPackageStartupMessages(library(yaml))
+pacman::p_load(magrittr, tidyr, dplyr, stringr, readr, lubridate, fs, futile.logger, curlconverter,
+               jsonlite, httr, yaml, ssh, googledrive, viridis, ggplot2, hrbrthemes, yaml, sitools,
+               fmsb, kableExtra, DT, plotly)
 
 options(knitr.table.format = "html")
 cz_stats_cfg <- read_yaml("config.yaml")

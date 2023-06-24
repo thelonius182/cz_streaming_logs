@@ -1,11 +1,5 @@
-library(tidyverse)
-library(fs)
-library(magrittr)
-library(jsonlite)
-library(httr)
-library(purrr)
-library(yaml)
-library(futile.logger)
+pacman::p_load(magrittr, tidyr, dplyr, stringr, readr, lubridate, fs, futile.logger, curlconverter,
+               jsonlite, httr, yaml, ssh, googledrive, purrr, yaml)
 
 cz_stats_cfg <- read_yaml("config.yaml")
 
@@ -36,15 +30,14 @@ flog.info(paste0("ip-addresses this month = ", nrow(cz_stats_joined_01.1)), name
 flog.info(paste0("new arrivals this month = ", nrow(cz_new_ipa)), name = "geodata_log")
 
 # stop if maxmind stock is too low
-req_stock_tib <- read_rds(file = "req_stock_tib.RDS")
-n_req_stock <- req_stock_tib$n[[1]]
-# n_req_stock <- 50
+maxmind_creds <- read_rds(file = paste0(cz_stats_cfg$ws_geodata_home, "mm_creds.RDS"))
+n_queries <- queries_remaining(maxmind_creds)
 
 for (block in 1:1) {
   
-  if (nrow(cz_new_ipa) > n_req_stock) {
+  if (nrow(cz_new_ipa) > n_queries) {
     flog.info(paste0("job canceled - maxmind subscription ran out. Available = ", 
-                     n_req_stock,
+                     n_queries,
                      ", required = ",
                      nrow(cz_new_ipa)), 
               name = "geodata_log")
@@ -54,7 +47,6 @@ for (block in 1:1) {
   # init maxmind loop
   geo_response_err <- read_rds(file = "geo_response_dft.RDS")
   geo_response_set <- read_rds(file = "geo_response_dft.RDS") %>% mutate(message = "stub_row")
-  maxmind_creds <- read_rds(file = paste0(cz_stats_cfg$ws_geodata_home, "mm_creds.RDS"))
   
   http_template <- "https://geoip.maxmind.com/geoip/v2.1/city/@CZ_IPA?pretty"
   # wi_loops <- 0
@@ -134,10 +126,6 @@ for (block in 1:1) {
     cz_ipa_geo_full %<>% bind_rows(geo_response_set)
     write_rds(x = cz_ipa_geo_full, file = paste0(cz_stats_cfg$ws_geodata_home, "cz_ipa_geo_full.RDS"), compress = "gz")
   }
-  
-  # remember how many requets we have left
-  req_stock_tib <- tibble(n = n_req_stock)
-  write_rds(x = req_stock_tib, file = "req_stock_tib.RDS", compress = "gz")
 }
 
 # ### handy to save this ###

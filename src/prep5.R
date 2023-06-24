@@ -133,4 +133,6 @@ cz_stats_cha_05 <- sessions_by_hour %>%
     cz_ref = lg_referrer
   )
 
+write_rds(cz_stats_cha_05, file = paste0(stats_data_flr(), "cz_stats_cha_05.RDS"))
+
 rm(itvl01, itvl02, itvl03, itvl04, itvl05, sessions_by_hour, cz_stats_cha.04)

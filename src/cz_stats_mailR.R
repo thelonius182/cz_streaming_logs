@@ -1,10 +1,6 @@
-suppressPackageStartupMessages(library(gmailr))
-suppressPackageStartupMessages(library(tidyverse))
-suppressPackageStartupMessages(library(lubridate))
-suppressPackageStartupMessages(library(viridis))
-suppressPackageStartupMessages(library(magrittr))
-suppressPackageStartupMessages(library(yaml))
-suppressPackageStartupMessages(library(fs))
+pacman::p_load(gmailr, viridis, magrittr, yaml, fs, tidyr, dplyr, stringr, 
+               readr, lubridate, futile.logger, curlconverter,
+               jsonlite, httr, yaml, ssh, googledrive)
 
 cz_stats_cfg <- read_yaml("config.yaml")
 

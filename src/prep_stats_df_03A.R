@@ -6,7 +6,10 @@ source("src/prep_funcs.R", encoding = "UTF-8")
 
 cz_stats_rod.10 <- read_rds(file = paste0(stats_data_flr(), "cz_stats_rod.10.RDS")) # from prep_rod4.R
 cz_stats_cha_08 <- read_rds(file = paste0(stats_data_flr(), "cz_stats_cha_08.RDS")) # from prep8.R
-cz_ipa_geo_full <- read_rds(file = paste0(cz_stats_cfg$ws_geodata_home, "cz_ipa_geo_full.RDS")) # from ws_geodata.R
+
+# from ws_geodata.R
+cz_ipa_geo_full <- read_rds(file = paste0(cz_stats_cfg$ws_geodata_home, "cz_ipa_geo_full.RDS")) %>% 
+  group_by(ip) %>% mutate(ip_row = row_number()) %>% ungroup() %>% filter(ip_row == 1) %>% select(-ip_row)
 
 cz_stats_joined_01 <- cz_stats_cha_08 %>% 
   bind_rows(cz_stats_rod.10) %>% 
@@ -96,7 +99,7 @@ if (nrow(cz_stats_joined_04_missing) > 0) {
   # disregard if missing hours is low
   hrs_missing <- sum(cz_stats_joined_04_missing$cz_length) / 3600
   
-  if (hrs_missing < 12) {
+  if (hrs_missing < 100) {
     cz_stats_joined_04 %<>% filter(!is.na(pgm_title_fixed))
     
     # clear this so main.R can continue
