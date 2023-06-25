@@ -2,19 +2,8 @@
 # READ ME ----
 # Get the Channel- and RoD-logs from Greenhost
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-suppressPackageStartupMessages(library(R.utils))
-suppressPackageStartupMessages(library(magrittr))
-suppressPackageStartupMessages(library(tidyr))
-suppressPackageStartupMessages(library(dplyr))
-suppressPackageStartupMessages(library(stringr))
-suppressPackageStartupMessages(library(readr))
-suppressPackageStartupMessages(library(lubridate))
-suppressPackageStartupMessages(library(fs))
-suppressPackageStartupMessages(library(futile.logger))
-suppressPackageStartupMessages(library(curlconverter))
-suppressPackageStartupMessages(library(jsonlite))
-suppressPackageStartupMessages(library(httr))
-suppressPackageStartupMessages(library(ssh))
+pacman::p_load(R.utils, magrittr, tidyr, dplyr, stringr, readr, lubridate, fs, 
+               futile.logger, curlconverter, jsonlite, httr, ssh)
 
 # init logger ----
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_stats_proc_log")

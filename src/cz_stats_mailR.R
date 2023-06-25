@@ -89,13 +89,18 @@ cur_pgms_w_editor <- salsa_stats_all_pgms_w_editor %>%
   add_row(tibble(pgmTitle = "Acoustic Roots", post_editor = "Hans Meerman")) %>% 
   add_row(tibble(pgmTitle = "Bach en Co", post_editor = "Hans Meerman")) %>% 
   add_row(tibble(pgmTitle = "Geen dag zonder Bach", post_editor = "Hans Meerman")) %>% 
-  add_row(tibble(pgmTitle = "¡Mambo!", post_editor = "Peter van Cooten")) 
+  add_row(tibble(pgmTitle = "¡Mambo!", post_editor = "Peter van Cooten")) %>% 
+  add_row(tibble(pgmTitle = "Popart", post_editor = "Peter van Cooten")) %>%
+  add_row(tibble(pgmTitle = "Popart", post_editor = "Fred Wittenberg")) %>%
+  filter(post_editor != "GovertJan Bach")
 
 # init mailinglist cur month ----
 cur_pgms_vzl <- cur_pgms_w_editor %>% 
-  left_join(cz_stats_verzendlijst.vzl, by = c("pgmTitle" = "titel_gids")) %>% 
+  left_join(cz_stats_verzendlijst.vzl, by = c("pgmTitle" = "titel_gids"), relationship = "many-to-many") %>% 
   mutate(matching_editor = str_detect(tolower(post_editor), tolower(wie))) %>% 
-  filter(matching_editor | post_editor == "Redactie Concertzender Actueel") %>% 
+  filter(matching_editor | 
+           post_editor == "Redactie Concertzender Actueel" |
+           post_editor %in% c("Peter van Cooten", "Fred Wittenberg")) %>% 
   select(-post_editor, -matching_editor) %>% distinct() %>% 
   group_by(titel_stats, wie) %>% mutate(tsw = row_number()) %>% 
   ungroup() %>% filter(tsw == 1) %>% select(-tsw)
