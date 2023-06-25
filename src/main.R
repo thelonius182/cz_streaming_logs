@@ -209,7 +209,7 @@ if(nrow(cz_stats_joined_04_missing) == 0) {
   source("src/cz_stats_plot_all_pgms.R", encoding = "UTF-8")
   source("src/cz_stats_plot_all_channels.R", encoding = "UTF-8")
   source("src/cz_stats_plot_hours_of_day_by_pgm.R", encoding = "UTF-8")
-  source("src/cz_stats_by_slot.R", encoding = "UTF-8")
+  # source("src/cz_stats_by_slot.R", encoding = "UTF-8")
   
   print("------------------ job completed successfully")
   
