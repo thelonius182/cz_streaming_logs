@@ -71,8 +71,32 @@ cz_stats_verzendlijst.1 <- tbl_stats_vzl_lst %>%
 # $#sleutels: titel_stats in GDrive/Luistercijfers verzendlijst 2.0/verzendlijst 
 #             moet overeenkomen met pgmTtle_clean in pgm_title_cleaner.tsv. Bij wijzigingen: download 
 #             de sheet opnieuw en herdraai in main: src/prep_stats_df_03A.R, -03B.R en -05.R
-cz_stats_by_pgm.1 <- read_rds(file = paste0(stats_data_flr(), "cz_licharod_stats_pgm_report.2.RDS")) %>% 
-  filter(!is.na(hours_tot) & pgm_title %in% cz_stats_verzendlijst.1$titel_stats)
+cz_stats_by_pgm.1 <- read_rds(file = paste0(stats_data_flr(), "cz_licharod_stats_pgm_report.2.RDS")) |> 
+  filter(!is.na(hours_tot)) |> 
+  mutate(pgm_title = case_when(pgm_title == "Bach & Co" ~ "Bach en Co",
+                               pgm_title == "Actueel" ~ "Concertzender Actueel",
+                               pgm_title == "De Wandeling" ~ "De wandeling",
+                               pgm_title == "Een Vroege Wandeling" ~ "De wandeling",
+                               pgm_title == "Disc-cover" ~ "Disc-Cover!",
+                               pgm_title == "Esprit Baroque" ~ "L’Esprit Baroque",
+                               pgm_title == "Folk it" ~ "Folk It!",
+                               pgm_title == "Groove en Grease" ~ "Groove and Grease",
+                               pgm_title == "Kroniek van de Nederlandse muziek" ~ "Kroniek van de Nederlandse Muziek",
+                               pgm_title == "Mambo" ~ "¡Mambo!",
+                               pgm_title == "Missa etcetera" ~ "Missa Etcetera",
+                               pgm_title == "Moaning the Blues" ~ "Moanin’ the Blues",
+                               pgm_title == "Nieuw verschenen" ~ "Nieuw Verschenen",
+                               pgm_title == "The sound of movies" ~ "The Sound of Movies",
+                               pgm_title == "Sound of movies" ~ "The Sound of Movies",
+                               T ~ pgm_title)) |> 
+  filter(!is.na(hours_tot) & pgm_title %in% cz_stats_verzendlijst.1$titel_gids)
+
+# unmatched_titles <- cz_stats_verzendlijst.1 |> left_join(cz_stats_by_pgm.1, by = c("titel_gids" = "pgm_title"), keep = T) |> 
+#   filter(is.na(hours_tot))  |> select(titel_gids, titel_stats, pgm_title) |> distinct()
+
+# title_compare_left <- cz_stats_verzendlijst.1 |> select(T1 = titel_gids) |> distinct()
+# title_compare_right <- cz_stats_by_pgm.1 |> select(T1 = pgm_title) |> distinct()
+# title_compare_missing_right <- title_compare_left |> anti_join(title_compare_right)
 
 cz_stats_titles <- cz_stats_by_pgm.1 %>% select(pgm_title) %>% distinct()
 
@@ -96,12 +120,13 @@ plot_cur_period <- paste0(" (",
                                     TRUE ~ "Dec. "),
                           cz_stats_cfg$`current-month` %>% str_sub(1, 4),
                           ")")
+cat("\n")
 
 for (wrk_title in cz_stats_titles$pgm_title) {
   cz_pgm_radar.a <- cz_pgm_radar.1 %>% filter(pgm_title == wrk_title)
-  
+  cat("plot", wrk_title,"\n")
   # get proper pgm title
-  proper_pgm_title <- cz_stats_verzendlijst.1 %>% filter(titel_stats == wrk_title) %>% select(titel_gids) %>% distinct()
+  proper_pgm_title <- cz_stats_verzendlijst.1 %>% filter(titel_gids == wrk_title) %>% select(titel_gids) %>% distinct()
   
   # plot_title <-paste0(cz_pgm_radar.a$pgm_title, " (", stats_data_flr() %>% str_extract(pattern = "\\d{4}-\\d{2}"), ")")
   # plot_title <- paste0(proper_pgm_title$titel_gids[[1]], " (", stats_data_flr() %>% str_extract(pattern = "\\d{4}-\\d{2}"), ")")

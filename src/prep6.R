@@ -18,9 +18,10 @@ caroussel <- stage_caroussel()
 cha_cur_pgms <- caroussel %>% 
   group_by(cha_id) %>% 
   mutate(cha_idx_max = max(cha_idx)) %>% 
-  filter(!is.na(cp_snap_ts))
+  filter(cha_idx == cha_idx_max) |> distinct()
+  # filter(!is.na(cp_snap_ts))
 
-cp_snap_ts_new <- file_info("/home/lon/Downloads/themakanalen_current_pgms.txt") %>% select("change_time")
+cp_snap_ts_new <- file_info("/mnt/muw/cz_stats_wpdata/themakanalen_current_pgms.txt") %>% select("change_time")
 cha_cur_pgms %<>% mutate(cp_snap_ts = cp_snap_ts_new$change_time)
 
 cur_cha_new <-  NULL

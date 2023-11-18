@@ -61,7 +61,7 @@ cz_stats_joined_03 <- cz_stats_joined_02 %>%
 
 # salsa_stats_all_pgms_raw <-
 #   read_delim(
-#     "~/Downloads/salsa_stats_all_pgms.txt",
+#     "/mnt/muw/cz_stats_wpdata/salsa_stats_all_pgms.txt",
 #     delim = "\t",
 #     escape_double = FALSE,
 #     col_types = cols(pgmLang = col_skip()),
@@ -74,11 +74,11 @@ cz_stats_joined_03 <- cz_stats_joined_02 %>%
 #   mutate(pgmTtle_clean = str_to_sentence(str_replace_all(pgmTitle, "[[:punct:]]", ""))) %>%
 #   arrange(pgmTitle)
 # 
-# write_delim(pgm_titles_unique, file = "~/Downloads/pgm_title_cleaner_20220402.tsv", delim = "\t")
+# write_delim(pgm_titles_unique, file = "/mnt/muw/cz_stats_wpdata/pgm_title_cleaner_20220402.tsv", delim = "\t")
 
 # In ieder geval wel deze doen!
-# vertaalsleutel programmatitels: "pgm_title_fixed" in de csv == "titel_stats" in de GD-verzendlijst
-cz_pgm_titles_fixed.1 <- read_delim("~/Downloads/pgm_title_cleaner.tsv",
+# vertaalsleutel programmatitels: "pgm_title_fixed" in de tsv == "titel_stats" in de GD-verzendlijst
+cz_pgm_titles_fixed.1 <- read_delim("/mnt/muw/cz_stats_wpdata/pgm_title_cleaner.tsv",
   delim = "\t",
   escape_double = FALSE,
   col_names = TRUE,
@@ -90,6 +90,61 @@ names(cz_pgm_titles_fixed.1) <- c("pgm_title", "pgm_title_fixed")
 
 cz_stats_joined_04 <- cz_stats_joined_03 %>% 
   left_join(cz_pgm_titles_fixed.1, by = c("pgm_title" = "pgm_title"))
+
+cz_stats_joined_04 <- cz_stats_joined_04 |> 
+  mutate(pgm_title_fixed = 
+           case_when(pgm_title == "Lâ\\u0080\\u0099Esprit Baroque" ~ "Esprit Baroque", 
+                     pgm_title == "Meester â\\u0080\\u0093 Gezel" ~ "Meester en Gezel",
+                     pgm_title == "Oriënt Expres" ~ "Oriënt Express",
+                     pgm_title == "OriÃ«nt Expres" ~ "Oriënt Express",
+                     pgm_title == "OriÃ«nt Express" ~ "Oriënt Express",
+                     pgm_title == "Brazil In A Nutshell" ~ "Brazil in a Nutshell",
+                     pgm_title == "Brazil In a Nutshell" ~ "Brazil in a Nutshell",
+                     pgm_title == "Componist van de maand" ~ "Componist van de Maand",
+                     pgm_title == "Componist vd maand" ~ "Componist van de Maand",
+                     pgm_title == "De Muzikant / Concertzender Live" ~ "De Muzikant",
+                     pgm_title == "De Muzikant Concertzender Live" ~ "De Muzikant",
+                     pgm_title == "Componist vd Maand" ~ "Componist van de Maand",
+                     pgm_title == "Aktueel" ~ "Actueel",
+                     pgm_title == "De piano etude" ~ "De piano-etude",
+                     pgm_title == "De piano etude: Van oefening tot kunst" ~ "De piano-etude",
+                     pgm_title == "De piano-etude, van oefening tot kunst" ~ "De piano-etude",
+                     pgm_title == "Duitse barok vÃ³Ã³r Bach" ~ "Duitse barok vóór Bach",
+                     pgm_title == "De wandeling" ~ "De Wandeling",
+                     pgm_title == "De Ochtendwandeling" ~ "De Wandeling",
+                     pgm_title == "Een late wandeling" ~ "De Wandeling",
+                     pgm_title == "Grand CafÃ© Europa" ~ "Grand Café Europa",
+                     pgm_title == "Klassiek TsjechiÃ«" ~ "Klassiek Tsjechië",
+                     pgm_title == "Meester â Gezel" ~ "Meester - Gezel",
+                     pgm_title == "Tango FusiÃ³n" ~ "Tango Fusión",
+                     pgm_title == "Tango FusiÃ³n" ~ "Tango Fusión",
+                     str_detect(pgm_title, ".Mambo.") ~ "Mambo",
+                     str_detect(pgm_title, ".*Esprit Baroque") ~ "Esprit Baroque",
+                     str_detect(pgm_title, "Een [Vv]roege [Ww]andeling") ~ "De Wandeling",
+                     str_detect(pgm_title, "Concertzender (Live Kerst|[Ll]ive!?|Live Napels|)") ~ "Concertzender Live",
+                     str_detect(pgm_title, "Vredenburg live!?") ~ "Vredenburg live",
+                     str_detect(pgm_title, "Disc-[Cc]over!?") ~ "Disc-cover",
+                     str_detect(pgm_title, "Donder, bliksem en manen?schijn") ~ "Donder, bliksem en maneschijn",
+                     str_detect(pgm_title, "Door de [Mm]azen van het [Nn]et") ~ "Door de Mazen van het Net",
+                     str_detect(pgm_title, "Folk [Ii]t!?") ~ "Folk it",
+                     str_detect(pgm_title, "Framework.*") ~ "Framework",
+                     str_detect(pgm_title, "Front Runn.*") ~ "Front Running",
+                     str_detect(pgm_title, "Geen dag zonder Bach.*") ~ "Geen dag zonder Bach",
+                     str_detect(pgm_title, "Groove &(amp;)? Grease") ~ "Groove en Grease",
+                     str_detect(pgm_title, "Inventions [Ff]or Radio.*") ~ "Inventions For Radio",
+                     str_detect(pgm_title, "JazzNotJazz.*") ~ "JazzNotJazz",
+                     str_detect(pgm_title, "Kroniek van de .*[Mm]uziek") ~ "Kroniek van de Nederlandse muziek",
+                     str_detect(pgm_title, "Moanin. the Blues") ~ "Moaning the Blues",
+                     str_detect(pgm_title, "New Folk [Ss]ounds [Oo]n [Aa]ir") ~ "New Folk Sounds on Air",
+                     str_detect(pgm_title, "Ongehoorde [Ss]cores") ~ "Ongehoorde Scores",
+                     str_detect(pgm_title, ".*?Krizz Krazz.?") ~ "Krizz Krazz",
+                     str_detect(pgm_title, "Popart.*") ~ "Popart",
+                     str_detect(pgm_title, "Rheinbergers kamermuziek.*") ~ "Rheinbergers kamermuziek",
+                     str_detect(pgm_title, "Sound of [Mm]ovies") ~ "Sound of Movies",
+                     str_detect(pgm_title, "Tango: [Ll]ied van Buenos Aires") ~ "Tango: Lied van Buenos Aires",
+                     str_detect(pgm_title, "Zwerven door .*") ~ "Zwerven door de Klassieke Periode",
+                     str_detect(pgm_title, "Zuiver [Kk]lassiek") ~ "Zuiver Klassiek",
+                     T ~ pgm_title))
 
 # signal missing titles
 cz_stats_joined_04_missing <- cz_stats_joined_04 %>% filter(is.na(pgm_title_fixed))

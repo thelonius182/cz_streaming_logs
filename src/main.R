@@ -58,8 +58,7 @@ cz_log_list <- cz_log_limits %>%
 # - C:\Users\nipper\Downloads\salsa_stats_all_pgms.txt
 # copy to ubu_vm via Z370: /home/lon/Downloads/salsa_stats_all_pgms.txt
 salsa_stats_all_pgms_raw <-
-  read_delim(
-    "~/Downloads/salsa_stats_all_pgms.txt",
+  read_delim("/mnt/muw/cz_stats_wpdata/salsa_stats_all_pgms.txt",
     delim = "\t",
     escape_double = FALSE,
     col_types = cols(pgmLang = col_skip()),
@@ -94,8 +93,7 @@ write_rds(x = salsa_stats_all_pgms.1,
 # themakanalen_listed_raw <- read_csv("~/Downloads/themakanalen_listed.csv")
   
 themakanalen_listed_raw <-
-  read_delim(
-    "~/Downloads/themakanalen_listed.txt",
+  read_delim("/mnt/muw/cz_stats_wpdata/themakanalen_listed.txt",
     delim = "\t",
     escape_double = FALSE,
     locale = locale(encoding = "ISO-8859-1"),
@@ -109,7 +107,7 @@ themakanalen_listed_raw <-
 # Built by query on Nipper-pc, exported as themakanalen_current_pgms.csv
 # C:\Users\nipper\Documents\cz_queries\themakanalen.sql
 # "current" means "for this reporting period"!
-cur_pgms_snapshot_filename <- "~/Downloads/themakanalen_current_pgms.txt"
+cur_pgms_snapshot_filename <- "/mnt/muw/cz_stats_wpdata/themakanalen_current_pgms.txt"
 cur_pgms_snapshot.1 <-
   read_delim(cur_pgms_snapshot_filename, 
              delim = "\t",escape_double = FALSE,

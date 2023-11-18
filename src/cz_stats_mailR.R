@@ -57,8 +57,7 @@ cz_rep_month_start <- paste0(fmt_cz_month(ymd_hms(cz_reporting_day_one_chr, tz =
 cz_rep_month_stop <- paste0(fmt_cz_month(ceiling_date(cz_reporting_day_one + ddays(1), unit = "months")), "00")
 
 salsa_stats_all_pgms_w_editor <-
-  read_delim(
-    "~/Downloads/salsa_stats_all_pgms.txt",
+  read_delim("/mnt/muw/cz_stats_wpdata/salsa_stats_all_pgms.txt",
     delim = "\t",
     escape_double = FALSE,
     lazy = F,
@@ -186,7 +185,7 @@ for (cur_mail_to in send_loop_mail_to$email) {
     
     cz_stats_msg <- cz_stats_msg %>% gm_attach_file(paste0(stats_data_flr(), "diagrams/CZ-luistercijfers, alle kanalen.png"))
     
-    gm_send_message(cz_stats_msg)
+    # gm_send_message(cz_stats_msg)
     # gm_create_draft(cz_stats_msg)
   }
 }
