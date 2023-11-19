@@ -123,7 +123,8 @@ plot_cur_period <- paste0(" (",
 cat("\n")
 
 for (wrk_title in cz_stats_titles$pgm_title) {
-  cz_pgm_radar.a <- cz_pgm_radar.1 %>% filter(pgm_title == wrk_title)
+  cz_pgm_radar.a <- cz_stats_by_pgm.1 %>% filter(pgm_title == wrk_title)
+  # cz_pgm_radar.a <- cz_pgm_radar.1 %>% filter(pgm_title == wrk_title)
   cat("plot", wrk_title,"\n")
   # get proper pgm title
   proper_pgm_title <- cz_stats_verzendlijst.1 %>% filter(titel_gids == wrk_title) %>% select(titel_gids) %>% distinct()
@@ -131,12 +132,12 @@ for (wrk_title in cz_stats_titles$pgm_title) {
   # plot_title <-paste0(cz_pgm_radar.a$pgm_title, " (", stats_data_flr() %>% str_extract(pattern = "\\d{4}-\\d{2}"), ")")
   # plot_title <- paste0(proper_pgm_title$titel_gids[[1]], " (", stats_data_flr() %>% str_extract(pattern = "\\d{4}-\\d{2}"), ")")
   plot_title <- paste0(proper_pgm_title$titel_gids[[1]], plot_cur_period)
-  cz_pgm_radar.a %<>% select(-pgm_id, -pgm_title)
+  cz_pgm_radar.a %<>% select(any_of(names(cz_pgm_radar.max))) 
   
-  cz_pgm_radar.b <- cz_pgm_radar.max %>% 
-    bind_rows(cz_pgm_radar.min) %>% 
-    bind_rows(cz_pgm_radar.a) %>% 
-    bind_rows(cz_pgm_radar.mean) 
+  cz_pgm_radar.b <- cz_pgm_radar.max |> 
+    bind_rows(cz_pgm_radar.min) |> 
+    bind_rows(cz_pgm_radar.a) |> 
+    bind_rows(cz_pgm_radar.mean) |> mutate(across(everything(), ~ coalesce(., 0)))
   
   # rownames(cz_pgm_radar.b) <- c("max", "min", "pgm", "mean")
   # format(n_devices_month, big.mark = ".", decimal.mark = ",")
