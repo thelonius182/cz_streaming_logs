@@ -14,12 +14,16 @@ cz_stats_cha <- tibble(
   lg_session_length = "l"
 )
 
+cat("\n")
+
 for (cur_log_file in cz_log_list$cz_log_list_path) {
+  cat("logfile:", cur_log_file, "\n")
   ana_single <- analyze_log(cur_log_file)
   cz_stats_cha <- bind_rows(cz_stats_cha, ana_single)
 }
 
 rm(ana_single)
+cat("logfiles completed\n")
 
 cz_stats_cha.1 <- cz_stats_cha %>% 
   filter(month(lg_cz_ts) == month(cz_reporting_day_one))

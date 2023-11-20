@@ -42,7 +42,7 @@ if (!dir_exists(stats_flr)) {
 }
 
 # get known periods logged ----
-cz_log_limits <- read_rds(file = "cz_log_limits.RDS")
+cz_log_limits <- read_rds(file = "cz_log_limits.RDS") # |> filter(!str_detect(cz_log_dir, "20231001"))
 
 # get list of which log files to process ----
 cz_log_list <- cz_log_limits %>% 
