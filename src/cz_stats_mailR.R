@@ -10,41 +10,12 @@ source("src/prep_funcs.R", encoding = "UTF-8")
 # load verzendlijst ----
 source("src/get_google_czdata_stats.R", encoding = "UTF-8")
 
-# prep title list ----
-# cz_stats_verzendlijst.tpt <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - themakanalen-per-titel.tsv",
-#                                       delim = "\t", escape_double = FALSE,
-#                                       trim_ws = TRUE,
-#                                       quote = "",
-#                                       show_col_types = FALSE) 
- 
-# tpt_dft.1 <- cz_stats_verzendlijst.tpt %>% 
-#   select(titel_gids) %>% distinct() %>% 
-#   mutate(themakanaal = "Live")
-# 
-# tpt_dft.2 <- cz_stats_verzendlijst.tpt %>% 
-#   select(titel_gids) %>% distinct() %>%  
-#   mutate(themakanaal = "Radio on Demand")
-#   
-# cz_stats_verzendlijst.tpt.1 <-
-#   cz_stats_verzendlijst.tpt %>% bind_rows(tpt_dft.1) %>% bind_rows(tpt_dft.2) %>% arrange(titel_gids, themakanaal)
-  
 cz_stats_verzendlijst.tpt.list <- tbl_stats_vzl_tpt %>% 
   select(-greenhost_stream) %>% 
   group_by(titel_gids) %>% 
   mutate(grp = row_number())
 
-# cz_stats_verzendlijst.mad <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - mailadressen.tsv",
-#                                       delim = "\t", escape_double = FALSE,
-#                                       trim_ws = TRUE,
-#                                       quote = "",
-#                                       show_col_types = FALSE) 
-
 cz_stats_verzendlijst.vzl <- tbl_stats_vzl_lst %>% 
-# cz_stats_verzendlijst.vzl <- read_delim("~/Downloads/Luistercijfers verzendlijst 2.0 - verzendlijst.tsv",
-#                                       delim = "\t", escape_double = FALSE,
-#                                       trim_ws = TRUE,
-#                                       quote = "",
-#                                       show_col_types = FALSE) %>% 
   filter(deelnemer_actief) %>% 
   select(-deelnemer_actief, -live_stream_tonen) %>% 
   left_join(tbl_stats_vzl_mad)
@@ -96,46 +67,36 @@ cur_pgms_w_editor <- salsa_stats_all_pgms_w_editor %>%
 # init mailinglist cur month ----
 cur_pgms_vzl <- cur_pgms_w_editor %>% 
   left_join(cz_stats_verzendlijst.vzl, by = c("pgmTitle" = "titel_gids"), relationship = "many-to-many") %>% 
-  mutate(matching_editor = str_detect(tolower(post_editor), tolower(wie))) %>% 
-  filter(matching_editor | 
-           post_editor == "Redactie Concertzender Actueel" |
-           post_editor %in% c("Peter van Cooten", "Fred Wittenberg")) %>% 
-  select(-post_editor, -matching_editor) %>% distinct() %>% 
-  group_by(titel_stats, wie) %>% mutate(tsw = row_number()) %>% 
+  select(-post_editor) %>% distinct() %>% group_by(titel_stats, wie) %>% mutate(tsw = row_number()) %>% 
   ungroup() %>% filter(tsw == 1) %>% select(-tsw)
 
 # get pgm stats cur month ----
 cur_pgms_stats <- read_rds(file = paste0(stats_data_flr(), "cz_licharod_stats_pgm_report.2.RDS")) %>% 
-  filter(!is.na(hours_tot) & pgm_title %in% cur_pgms_vzl$titel_stats)
+  filter(!is.na(hours_tot))
 
 # complete mailinglist cur month ----
 cz_stats_emails <- cur_pgms_stats %>% select(pgm_title) %>% distinct() %>% 
-  inner_join(cur_pgms_vzl, by = c("pgm_title" = "titel_stats")) %>% 
-  select(email, aanhef, pgmTitle) %>% 
-  mutate(cz_stats_pgm_png = paste0(stats_data_flr(), "diagrams/", pgmTitle, ".png"),
-         cz_stats_streams_png = paste0(stats_data_flr(), "diagrams/Streams waar ", pgmTitle, " in opgenomen is.png")) %>% 
-  select(-pgmTitle) %>% 
+  inner_join(cur_pgms_vzl, by = c("pgm_title" = "pgmTitle")) %>% 
+  select(email, aanhef, pgm_title) %>% 
+  mutate(cz_stats_pgm_png = paste0(stats_data_flr(), "diagrams/", pgm_title, ".png"),
+         cz_stats_streams_png = paste0(stats_data_flr(), "diagrams/Streams waar ", pgm_title, " in opgenomen is.png")) %>% 
+  select(-pgm_title) %>% 
   arrange(email, aanhef)
 
 send_loop_mail_to <- cz_stats_emails %>% select(email) %>% distinct() 
-
-# cz_stats_mailaddress_salutation <- cz_stats_emails %>% select(email, aanhef) %>% distinct()
-# cz_stats_mailattachment <- cz_stats_emails %>% select(email, cz_stats_diagram)
 
 # connect to gmail ----
 gm_auth_configure(path = "cz-studiomails.json")
 gm_auth(email = "cz.teamservice@gmail.com")
 
-cz_stats_msg_body_template <- "
-@aanhef
+cz_stats_msg_body_template <- "@aanhef
 
 Nieuwe cijfers! 
+
 
 Met groet,
 Lon
 "
-
-# send_loop_mail_to <- read_rds("rerun_emails.RDS")
 
 plot_cur_month <- cz_stats_cfg$`current-month` %>% str_sub(6, 7)
 plot_cur_period <- paste0(" (",
@@ -176,19 +137,27 @@ for (cur_mail_to in send_loop_mail_to$email) {
       # gm_text_body(cur_body %>% str_replace("@cz_adres", cur_mail_to))
   
     for (cur_png in att_set$cz_stats_pgm_png) {
+      fe <- file_exists(cur_png)
+      cat("png =", cur_png, "file-exists", fe, "\n")
       cz_stats_msg <- cz_stats_msg %>% gm_attach_file(cur_png)
     }
   
+    
     for (cur_png in att_set$cz_stats_streams_png) {
+      fe <- file_exists(cur_png)
+      cat("png =", cur_png, "file-exists", fe, "\n")
       cz_stats_msg <- cz_stats_msg %>% gm_attach_file(cur_png)
     }
     
     cz_stats_msg <- cz_stats_msg %>% gm_attach_file(paste0(stats_data_flr(), "diagrams/CZ-luistercijfers, alle kanalen.png"))
     
-    # gm_send_message(cz_stats_msg)
+    gm_send_message(cz_stats_msg)
     # gm_create_draft(cz_stats_msg)
+    cat(" \n")
   }
 }
+
+cat("Mailing finished.\n")
 
 # 
 # test_email <-
