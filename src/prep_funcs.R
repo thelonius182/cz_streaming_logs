@@ -480,44 +480,17 @@ analyze_rod_log <- function(logfile) {
 }
 
 get_period_logged = function(filepath) {
-  # TEST_TEST_TEST_TEST    
-  # filepath = "/home/lon/Documents/cz_streaming_logs/S_20210514_115638/access.log.1"
-  # TEST_TEST_TEST_TEST    
   
   con = file(filepath, "r")
   log_line <- readLines(con, n = 1)
   close(con)
+
+  ts_log_chr <- str_extract(string = log_line, pattern = "\\[(.*?)\\]")
+  ts_log <- suppressMessages(dmy_hms(ts_log_chr, tz = "Europe/Amsterdam"))
   
-  # ts_max = ymd_hms("1900-01-01 00:00:00")
-  # ts_min = ymd_hms("2100-01-01 00:00:00")
-  
-  # for (cur_line in log_lines) {
-  #   
-  #   ts_cur_chr <- str_extract(string = cur_line, pattern = "\\[(.*?)\\]")
-  #   ts_cur <- suppressMessages(dmy_hms(ts_cur_chr, tz = "Europe/Amsterdam"))
-  #   
-  #   if (ts_cur > ts_max) {
-  #     ts_max = ts_cur
-  #   }
-  #   
-  #   if (ts_cur < ts_min) {
-  #     ts_min = ts_cur
-  #   }
-  #   
-  # }
-  
-  ts_log_chr <-
-    str_extract(string = log_line, pattern = "\\[(.*?)\\]")
-  ts_log <-
-    suppressMessages(dmy_hms(ts_log_chr, tz = "Europe/Amsterdam"))
-  
-  return(
-    tibble(
-      cz_log_dir = path_dir(filepath),
-      cz_log_file = path_file(filepath),
-      cz_ts_log = ts_log
-    )
-  )
+  return(tibble(cz_log_dir = path_dir(filepath),
+                cz_log_file = path_file(filepath),
+                cz_ts_log = ts_log))
 }
 
 stats_data_flr <- function(scope = "maand") {
