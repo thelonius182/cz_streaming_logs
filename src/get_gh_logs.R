@@ -3,7 +3,7 @@
 # Get the Channel- and RoD-logs from Greenhost
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 pacman::p_load(R.utils, magrittr, tidyr, dplyr, stringr, readr, lubridate, fs, 
-               futile.logger, curlconverter, jsonlite, httr, ssh)
+               futile.logger, jsonlite, httr, ssh)
 
 # init logger ----
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_stats_proc_log")

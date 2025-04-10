@@ -10,8 +10,8 @@
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-pacman::p_load(magrittr, tidyr, dplyr, stringr, readr, lubridate, fs, futile.logger, curlconverter,
-               jsonlite, httr, yaml, ssh, googledrive)
+pacman::p_load(magrittr, tidyr, dplyr, stringr, readr, lubridate, fs, futile.logger, 
+               purrr, jsonlite, httr, yaml, ssh, googledrive)
 
 # init logger ----
 fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_stats_proc_log")
@@ -21,7 +21,7 @@ fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_proc.log"), "cz_
 source("src/prep_funcs.R", encoding = "UTF-8")
 
 # download wp-files from GD
-source("src/download_wpfiles.R", encoding = "UTF-8")
+# source("src/download_wpfiles.R", encoding = "UTF-8")
 
 cz_stats_cfg <- read_yaml("config.yaml")
 
@@ -57,67 +57,67 @@ cz_log_list <- cz_log_limits %>%
 # - C:\Users\nipper\Documents\cz_queries\salsa_stats_cz_gids.sql
 # - C:\Users\nipper\Downloads\salsa_stats_all_pgms.txt
 # copy to ubu_vm via Z370: /home/lon/Downloads/salsa_stats_all_pgms.txt
-salsa_stats_all_pgms_raw <-
-  read_delim("/mnt/muw/cz_stats_wpdata/salsa_stats_all_pgms.txt",
-    delim = "\t",
-    escape_double = FALSE,
-    col_types = cols(pgmLang = col_skip()),
-    trim_ws = TRUE,
-    quote = ""
-  ) %>% filter(pgmTitle != "NULL")
+# salsa_stats_all_pgms_raw <-
+#   read_delim("/mnt/muw/cz_stats_wpdata/salsa_stats_all_pgms.txt",
+#     delim = "\t",
+#     escape_double = FALSE,
+#     col_types = cols(pgmLang = col_skip()),
+#     trim_ws = TRUE,
+#     quote = ""
+#   ) %>% filter(pgmTitle != "NULL")
 
-salsa_stats_all_pgms.1 <- salsa_stats_all_pgms_raw %>%
-  mutate(
-    tbh.id = row_number(),
-    tbh.cha_id = 0,
-    tbh.cha_name = "Live-stream",
-    tbh.start = ymd_h(pgmStart, tz = "Europe/Amsterdam"),
-    tbh.stop = ymd_h(pgmStop, tz = "Europe/Amsterdam"),
-    tbh.secs = int_length(interval(tbh.start, tbh.stop)),
-    tbh.title = str_replace(pgmTitle, "&amp;", "&"),
-    tbh.editor = post_editor
-  ) %>%
-  select(starts_with("tbh.")) %>% 
-  filter(tbh.secs > 0)
-
-rm(salsa_stats_all_pgms_raw)
-rds_file <- paste0(stats_data_flr(), "salsa_stats_all_pgms.1.RDS")
-dir_create(path_dir(rds_file))
-write_rds(x = salsa_stats_all_pgms.1,
-          file = rds_file,
-          compress = "gz")
+# salsa_stats_all_pgms.1 <- salsa_stats_all_pgms_raw %>%
+#   mutate(
+#     tbh.id = row_number(),
+#     tbh.cha_id = 0,
+#     tbh.cha_name = "Live-stream",
+#     tbh.start = ymd_h(pgmStart, tz = "Europe/Amsterdam"),
+#     tbh.stop = ymd_h(pgmStop, tz = "Europe/Amsterdam"),
+#     tbh.secs = int_length(interval(tbh.start, tbh.stop)),
+#     tbh.title = str_replace(pgmTitle, "&amp;", "&"),
+#     tbh.editor = post_editor
+#   ) %>%
+#   select(starts_with("tbh.")) %>% 
+#   filter(tbh.secs > 0)
+# 
+# rm(salsa_stats_all_pgms_raw)
+# rds_file <- paste0(stats_data_flr(), "salsa_stats_all_pgms.1.RDS")
+# dir_create(path_dir(rds_file))
+# write_rds(x = salsa_stats_all_pgms.1,
+#           file = rds_file,
+#           compress = "gz")
 
 # get theme channel (TC) playlists ----
 # Built by query on Nipper-pc, exported as .csv
 # C:\Users\nipper\Documents\cz_queries\themakanalen_2.sql
 # themakanalen_listed_raw <- read_csv("~/Downloads/themakanalen_listed.csv")
   
-themakanalen_listed_raw <-
-  read_delim("/mnt/muw/cz_stats_wpdata/themakanalen_listed.txt",
-    delim = "\t",
-    escape_double = FALSE,
-    locale = locale(encoding = "ISO-8859-1"),
-    trim_ws = TRUE,
-    quote = "",
-    show_col_types = F,
-    lazy = F
-  )
+# themakanalen_listed_raw <-
+#   read_delim("/mnt/muw/cz_stats_wpdata/themakanalen_listed.txt",
+#     delim = "\t",
+#     escape_double = FALSE,
+#     locale = locale(encoding = "UTF-8"),
+#     trim_ws = TRUE,
+#     quote = "",
+#     show_col_types = F,
+#     lazy = F
+#   )
 
 # get current TC-programs ----
 # Built by query on Nipper-pc, exported as themakanalen_current_pgms.csv
 # C:\Users\nipper\Documents\cz_queries\themakanalen.sql
 # "current" means "for this reporting period"!
-cur_pgms_snapshot_filename <- "/mnt/muw/cz_stats_wpdata/themakanalen_current_pgms.txt"
-cur_pgms_snapshot.1 <-
-  read_delim(cur_pgms_snapshot_filename, 
-             delim = "\t",escape_double = FALSE,
-             trim_ws = TRUE, quote = "", show_col_types = F)
-pgms_snapshot_info <- file_info(cur_pgms_snapshot_filename)
-cur_pgms_snapshot <- cur_pgms_snapshot.1 %>% 
-  mutate(ts_snapshot = pgms_snapshot_info$modification_time)
-
-tc_cur_pgms <- cur_pgms_snapshot %>% 
-  select(channel, current_program, cp_snap_ts = ts_snapshot)
+# cur_pgms_snapshot_filename <- "/mnt/muw/cz_stats_wpdata/themakanalen_current_pgms.txt"
+# cur_pgms_snapshot.1 <-
+#   read_delim(cur_pgms_snapshot_filename, 
+#              delim = "\t",escape_double = FALSE,
+#              trim_ws = TRUE, quote = "", show_col_types = F)
+# pgms_snapshot_info <- file_info(cur_pgms_snapshot_filename)
+# cur_pgms_snapshot <- cur_pgms_snapshot.1 %>% 
+#   mutate(ts_snapshot = pgms_snapshot_info$modification_time)
+# 
+# tc_cur_pgms <- cur_pgms_snapshot %>% 
+#   select(channel, current_program, cp_snap_ts = ts_snapshot)
 
 # gather streaming log files ----
 # stored in /home/lon/Documents/cz_streaming_logs/L_* ("logs Themakanalen + Live-stream")

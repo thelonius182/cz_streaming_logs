@@ -604,3 +604,15 @@ queries_remaining <- function(arg_creds) {
   n_req_stock_tib <- parsed_response %>% select(n = queries_remaining) 
   return(n_req_stock_tib$n[[1]])
 }
+
+# Function to expand a single row by hourly intervals
+expand_hourly <- function(pgm_start, pgm_stop, pgm_title, post_type) {
+  start_dt <- ymd_h(pgm_start, tz = "Europe/Amsterdam")
+  stop_dt <- ymd_h(pgm_stop, tz = "Europe/Amsterdam")
+  
+  tibble(
+    pgm_start = seq(start_dt, stop_dt - hours(1), by = "1 hour"),
+    pgm_title = pgm_title,
+    post_type = post_type
+  )
+}
