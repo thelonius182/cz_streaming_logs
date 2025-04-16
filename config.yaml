@@ -1,7 +1,9 @@
-current-month: 2025-01-01 00:00:00
+current_month: 2025-01-01 00:00:00
 stats_data_home: /home/lon/Documents/cz_stats_data/
+log_appender_file: /home/lon/Documents/cz_stats_proc.log
 cz_rds_store_ubu: /home/lon/cz_rds_store/cz_gdrive/
 ws_geodata_home: /home/lon/Documents/cz_streaming_logs/
+cz_wj_streams: /home/lon/Documents/cz_stats_data/streams.tsv
 
 gs_downloads_ubu: /home/lon/Downloads/gdrive/
 

@@ -112,7 +112,7 @@ proc_gh_logs <- function(pe_log_type) {
 
 stage_caroussel <- function() {
   
-  fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "cz_stats_proc_log")
+  fa <- flog.appender(appender.file("/home/lon/Documents/cz_stats_cha.log"), "statslog")
   
   themakanalen_listed <- themakanalen_listed_raw %>% 
     filter(!is.na(url) & !is.na(pgm_start))
@@ -139,7 +139,7 @@ stage_caroussel <- function() {
   
   for (cur_dir in gh_cha_dirs$cha_dir) {
     
-    flog.info(paste0("listing ", cur_dir), name = "cz_stats_proc_log")
+    flog.info(paste0("listing ", cur_dir), name = "statslog")
     
     ls_cmd <- paste("ls", cur_dir, "-lt --time-style=+'%Y-%m-%d %H:%M:%S'")
     
@@ -157,7 +157,7 @@ stage_caroussel <- function() {
     # prep the list ----
     if (is.null(cha_audio)) {
       
-      flog.info(paste0("listing failed for", cur_dir), name = "cz_stats_proc_log")
+      flog.info(paste0("listing failed for", cur_dir), name = "statslog")
       
     } else {
       
@@ -332,9 +332,9 @@ stage_caroussel <- function() {
   return(caroussel.6)
 }
 
-analyze_log <- function(logfile) {
+prep_cha_log <- function(logfile) {
   # logfile <- "/home/lon/Documents/cz_streaming_logs/access.log.7"
-  flog.info(paste0("log file: ", logfile), name = "cz_stats_proc_log")
+  flog.info(paste0("log file: ", logfile), name = "statslog")
   
   # inlezen ----  
   suppressMessages(
@@ -399,10 +399,10 @@ analyze_log <- function(logfile) {
   return(cz_log.2)
 }
 
-analyze_rod_log <- function(logfile) {
+prep_rod_log <- function(logfile) {
   # logfile <- "/home/lon/Documents/cz_streaming_logs/R_20210518_204228/access.log.9"
   
-  flog.info(paste0("log file: ", logfile), name = "cz_stats_proc_log")
+  flog.info(paste0("log file: ", logfile), name = "statslog")
   
   # inlezen ----  
   suppressMessages(
@@ -615,4 +615,23 @@ expand_hourly <- function(pgm_start, pgm_stop, pgm_title, post_type) {
     pgm_title = pgm_title,
     post_type = post_type
   )
+}
+
+# count unique hourly listeners by stream group
+count_listeners <- function(log_data) {
+  
+  log_data |>
+    mutate(
+      session_end = ts + d,
+      session_hours = map2(ts, session_end, \(start, end) {
+        seq(from = floor_date(start, "hour"),
+            to = floor_date(end, "hour"),
+            by = "hour")
+      })
+    ) |>
+    select(ip_address, stream, session_hours) |>
+    unnest(session_hours) |>
+    distinct(ip_address, stream, session_hour = session_hours) |>
+    count(stream, session_hour, name = "unique_listener_count") |>
+    select(session_hour, stream, unique_listener_count)
 }

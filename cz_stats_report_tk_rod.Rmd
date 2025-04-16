@@ -1,0 +1,62 @@
+---
+title: "`r params$title`"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: false
+    toc: false
+    keep_tex: false
+fontsize: 10pt
+geometry: top=1.5cm, bottom=2cm, left=2cm, right=1cm
+params:
+  title: "Default Title"
+  data_tk: NULL
+  data_rod: NULL
+---
+
+```{r table, include=TRUE, echo=FALSE, results='asis'}
+library(kableExtra)
+library(dplyr)
+
+# Generate kable object Themakanalen
+params$data_tk |> kbl(
+  format = "latex",
+  booktabs = TRUE,
+  longtable = TRUE,
+  caption = "Program Statistics Theme Channels",
+  align = c("l", "c", "r", "r"),
+  label = "tk"
+) |>
+  kable_styling(
+    latex_options = "repeat_header",
+    font_size = 10,
+    position = "center"
+  )
+# ```
+
+# ```{r table, include=TRUE, echo=FALSE, results='asis'}
+
+# Generate kable object Radio On Demand
+params$data_rod |> kbl(
+  format = "latex",
+  booktabs = TRUE,
+  longtable = TRUE,
+  caption = "Program Statistics Radio On-demand",
+  align = c("l", "c", "r", "r", "r"),
+  label = "rod"
+) |>
+  kable_styling(
+    latex_options = "repeat_header",
+    font_size = 10,
+    position = "center"
+  )
+```
+
+
+**Toelichting:**  
+
+- **bc_hours** — Broadcast hours: aantal uitgezonden uren  
+- **bc_date** — Broadcast date: datum van uitzending  
+- **unique_ips** — Aantal IP-adressen: unieke luisteraars  
+- **total_ips** — Aantal IP-adressen per dag: willekeurige luisteraars  
+- **tot_hours** — Aantal luisteruren  
