@@ -19,8 +19,8 @@ library(dplyr)
 
 # Sort data by weekday (optional: use custom weekday order)
 cz_sorted <- params$data |>
-  arrange(factor(weekday, levels = c(
-    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "TOTAL"
+  arrange(factor(dag, levels = c(
+    "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag", "TOTAAL"
   )))
 
 # Generate kable object
@@ -29,8 +29,8 @@ kbl_out <- kbl(
   format = "latex",
   booktabs = TRUE,
   longtable = TRUE,
-  caption = "Program Statistics",
-  align = c("l", "c", "c", "c", "r", "r", "r")
+  caption = "Overzicht per uitzending",
+  align = c("l", "c", "c", "c", "r", "r")
 ) |>
   kable_styling(
     latex_options = "repeat_header",
@@ -39,11 +39,11 @@ kbl_out <- kbl(
   )
 
 # Add group_rows for each weekday
-unique_weekdays <- unique(cz_sorted$weekday)
+unique_weekdays <- unique(cz_sorted$dag)
 
 row_index <- 1
 for (wd in unique_weekdays) {
-  num_rows <- sum(cz_sorted$weekday == wd)
+  num_rows <- sum(cz_sorted$dag == wd)
   kbl_out <- group_rows(
     kbl_out,
     group_label = wd,
@@ -59,12 +59,10 @@ kbl_out
 
 \begin{samepage}
 
-\textbf{Toelichting}
-
+\textbf{Toelichting:}
 \begin{itemize}
-  \item \textbf{bc\_hours} -- Broadcast hours: aantal uitgezonden uren  
-  \item \textbf{unique\_ips} -- Aantal IP-adressen: unieke luisteraars  
-  \item \textbf{tot\_hours} -- Aantal luisteruren  
+  \item Deze cijfers slaan alleen op uitzendingen via de \textbf{Luister Live}-kanalen.
+  \item De cijfers voor \textbf{Radio onDemand} en \textbf{Themakanalen} zijn niet per programmatitel beschikbaar, alleen op dag- en maandniveau over alle programmatitels samen. Zie daarvoor \textbf{Themakanalen \& OnDemand.pdf}.
 \end{itemize}
 
 \end{samepage}

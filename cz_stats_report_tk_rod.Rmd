@@ -8,40 +8,44 @@ output:
     keep_tex: false
 fontsize: 10pt
 geometry: top=1.5cm, bottom=2cm, left=2cm, right=1cm
+header-includes:
+  - \usepackage{tcolorbox}
 params:
   title: "Default Title"
   data_tk: NULL
   data_rod: NULL
+  data_ips: NULL
 ---
 
 ```{r table, include=TRUE, echo=FALSE, results='asis'}
 library(kableExtra)
 library(dplyr)
 
+total_row_tk <- which(params$data_tk$stream == "TOTAAL")
+total_row_rod <- which(params$data_rod$stream == "TOTAAL")
+
 # Generate kable object Themakanalen
 params$data_tk |> kbl(
   format = "latex",
   booktabs = TRUE,
   longtable = TRUE,
-  caption = "Program Statistics Theme Channels",
-  align = c("l", "c", "r", "r"),
+  caption = "Themakanalen (maandtotaal)",
+  align = c("l", "r", "r", "r"),
   label = "tk"
 ) |>
   kable_styling(
     latex_options = "repeat_header",
     font_size = 10,
     position = "center"
-  )
-# ```
-
-# ```{r table, include=TRUE, echo=FALSE, results='asis'}
+  ) |> 
+  row_spec(total_row_tk, bold = TRUE, hline_after = TRUE)
 
 # Generate kable object Radio On Demand
 params$data_rod |> kbl(
   format = "latex",
   booktabs = TRUE,
   longtable = TRUE,
-  caption = "Program Statistics Radio On-demand",
+  caption = "Radio on Demand (dagtotalen)",
   align = c("l", "c", "r", "r", "r"),
   label = "rod"
 ) |>
@@ -49,14 +53,11 @@ params$data_rod |> kbl(
     latex_options = "repeat_header",
     font_size = 10,
     position = "center"
-  )
+  ) |>
+  row_spec(total_row_rod, bold = TRUE, hline_after = TRUE)
 ```
-
-
-**Toelichting:**  
-
-- **bc_hours** — Broadcast hours: aantal uitgezonden uren  
-- **bc_date** — Broadcast date: datum van uitzending  
-- **unique_ips** — Aantal IP-adressen: unieke luisteraars  
-- **total_ips** — Aantal IP-adressen per dag: willekeurige luisteraars  
-- **tot_hours** — Aantal luisteruren  
+\begin{samepage}
+\begin{tcolorbox}[colback=gray!5, colframe=gray!60, title=Aantal unieke luisteraars]
+Deze maand waren er \textbf{`r format(params$data_ips, big.mark = ".", decimal.mark = ",")`} unieke luisteraars (over alle kanalen samen, dus Luister Live, Themakanalen en Radio OnDemand, van zowel Concertzender als World of Jazz).
+\end{tcolorbox}
+\end{samepage}

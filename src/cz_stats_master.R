@@ -4,7 +4,7 @@ pacman::p_load(magrittr, tidyr, dplyr, stringr, readr, lubridate, fs, futile.log
 # load functions ----
 source("src/prep_funcs.R", encoding = "UTF-8")
 
-# get month from config file----
+# get reporting month----
 cz_stats_cfg <- read_yaml("config.yaml")
 cz_reporting_day_one_chr <- cz_stats_cfg$current_month
 cz_reporting_day_one <- ymd_hms(cz_reporting_day_one_chr, tz = "Europe/Amsterdam")
@@ -17,10 +17,12 @@ flog.info(paste0("selecting logs for ", cz_reporting_day_one_chr), name = "stats
 
 # init stats directory
 stats_flr <- paste0(cz_stats_cfg$stats_data_home, str_sub(cz_reporting_day_one_chr, 1, 7))
+stats_flr_reports <- str_glue("{stats_flr}/reports")
 
 # prep STREAM+ROD logs ----
 if (!dir_exists(stats_flr)) {
   dir_create(stats_flr)
+  dir_create(stats_flr_reports)
   
   # . known periods logged ----
   cz_log_limits <- read_rds(file = "cz_log_limits.RDS") 
@@ -116,9 +118,11 @@ flog.info(paste0("line count rod's = ", nrow(cz_stats_rod.2)), name = "statslog"
 # link stream names ----
 cz_wj_streams <- read_tsv(cz_stats_cfg$cz_wj_streams, col_types = cols(.default = "c"))
 stream_order <- c("cz_live_stream", "woj_live_stream", "themakanaal_bach", "themakanaal_barok", 
+                  "themakanaal_chanson", "themakanaal_film",
                   "themakanaal_gehoorde_stilte", "themakanaal_gregoriaans", "themakanaal_hardbop", 
-                  "themakanaal_hedendaags", "themakanaal_jazz", "themakanaal_klassiek", 
-                  "themakanaal_oude_muziek", "overige_themakanalen")
+                  "themakanaal_hedendaags", "themakanaal_jazz", "themakanaal_jazznotjazz",
+                  "themakanaal_klassiek", "themakanaal_orientexpress",
+                  "themakanaal_oude_muziek", "themakanaal_wereldmuziek", "overige_themakanalen")
 
 cz_stats_cha.2 <- cz_stats_cha.1a |> mutate(stream = paste0(str_to_lower(bc_src), "_", lg_http_req),
                                             te = lg_cz_ts + frag_seconds,
@@ -126,6 +130,7 @@ cz_stats_cha.2 <- cz_stats_cha.1a |> mutate(stream = paste0(str_to_lower(bc_src)
   select(id_cha, ip_address = lg_ip, ts = lg_cz_ts, d = frag_seconds, te, stream) |> 
   left_join(cz_wj_streams, by = join_by(stream)) |> select(-stream) |> rename(stream = cz_redactie)
 
+# . set data.table cha-stats ----
 dt_cz_stats_cha <- as.data.table(cz_stats_cha.2) # |> filter(str_detect(stream, "live_stream$")))
 
 # load hourly titles ----
@@ -133,14 +138,23 @@ dt_cz_stats_cha <- as.data.table(cz_stats_cha.2) # |> filter(str_detect(stream, 
 hourly_titles_raw <- read_tsv(str_glue("{stats_flr}/hourly_titles.tsv"), 
                               col_names = c("pgm_start", "pgm_stop", "pgm_title", "post_type"),
                               col_types = cols(.default = "c"))
+# . add theme channels ----
+titles_tk <- read_tsv(str_glue("{cz_stats_cfg$stats_data_home}/titles_theme_channels.tsv"), 
+                             col_names = c("pgm_title", "post_type"),
+                             col_types = cols(.default = "c")) |> 
+  mutate(pgm_start = hourly_titles_raw[1, ]$pgm_start, 
+         pgm_stop = hourly_titles_raw[nrow(hourly_titles_raw), ]$pgm_stop) |> 
+  select(pgm_start, pgm_stop, pgm_title, post_type)
 
-hourly_titles_fixed <- hourly_titles_raw |> 
+hourly_titles_merged <- bind_rows(hourly_titles_raw, titles_tk)
+hourly_titles_fixed <- hourly_titles_merged |> 
   mutate(pgm_title = case_when(pgm_title == "Dansen en de blues" ~ "Dansen en de Blues",
                                pgm_title == "De wandeling" ~ "De Wandeling",
                                pgm_title == "Framework 1" ~ "Framework",
                                pgm_title == "Framework 2" ~ "Framework",
                                pgm_title == "Geen dag zonder Bach" ~ "Geen Dag zonder Bach",
                                pgm_title == "Vocal Jazz" ~ "Vocale Jazz",
+                               pgm_title == "Tussen droom en daad" ~ "Tussen Droom en Daad",
                                TRUE ~ pgm_title),
          pgm_title = str_replace(pgm_title, pattern = "&amp;", replacement = "&"),
          station = case_when(post_type == "programma" ~ "cz_live_stream", 
@@ -153,8 +167,10 @@ hourly_titles_fixed <- hourly_titles_raw |>
          id_tit = row_number()) |> 
   select(-post_type, -pgm_start, -pgm_stop)
 
+# . set data.table hours ----
 dt_hourly_titles <- as.data.table(hourly_titles_fixed)
 
+# get session matches ----
 setkey(dt_hourly_titles, station, bc_from60, bc_to60)
 result <- dt_cz_stats_cha[dt_hourly_titles, 
                           on = .(ts <= bc_to60, te >= bc_from60, stream == station), 
@@ -191,32 +207,27 @@ cz_stats_sessions_rod <- cz_stats_rod.3 |>
   mutate(pgm_title = NA_character_, tot_hours = NA_real_, bc_hours = 1) |> 
   select(pgm_title, stream, bc_from, bc_hours, unique_ips, tot_hours)
   
-
 # link stats and reorder ----
-merged_stream_order = c("cz_live_stream",
-                        "woj_live_stream",
-                        "concertpodium",
-                        "on_demand_cz",
-                        "on_demand_woj",
-                        "themakanaal_bach",
-                        "themakanaal_barok",
-                        "themakanaal_gehoorde_stilte",
-                        "themakanaal_gregoriaans",
-                        "themakanaal_hardbop",
-                        "themakanaal_hedendaags",
-                        "themakanaal_jazz",
-                        "themakanaal_klassiek",
-                        "themakanaal_oude_muziek",
-                        "overige_themakanalen")
+merged_stream_order <- c("cz_live_stream", "woj_live_stream", "concertpodium", "on_demand_cz", "on_demand_woj", 
+                         "themakanaal_bach", "themakanaal_barok", "themakanaal_chanson", "themakanaal_film",
+                         "themakanaal_gehoorde_stilte", "themakanaal_gregoriaans", "themakanaal_hardbop", 
+                         "themakanaal_hedendaags", "themakanaal_jazz", "themakanaal_jazznotjazz",
+                         "themakanaal_klassiek", "themakanaal_orientexpress", "themakanaal_oude_muziek", 
+                         "themakanaal_wereldmuziek", "overige_themakanalen")
+
 cz_stats_merged <- cz_stats_sessions_cha |> bind_rows(cz_stats_sessions_rod) |> 
   mutate(stream = factor(stream, levels = merged_stream_order)) |>
   arrange(bc_from, stream, pgm_title) |>
   select(bc_from, stream, pgm_title, everything()) |> 
   mutate(pgm_title = if_else(is.na(pgm_title), "on_demand", pgm_title))
 
+# store final result ----
+write_rds(cz_stats_merged, str_glue("{stats_flr}/cz_stats_merged.RDS"))
+
 # create pdf's ----
 # . live-streams ----
-cz_stats_merged_a <- cz_stats_merged |> filter(!pgm_title %in% c("on_demand", "themakanaal")) |> head()
+# cz_stats_merged_a <- cz_stats_merged |> filter(str_detect(pgm_title, "Droom"))
+cz_stats_merged_a <- cz_stats_merged |> filter(!pgm_title %in% c("on_demand", "themakanaal")) # |> head(3)
 sf <- lubridate::stamp(" - luistercijfers oktober 2021", locale = "nl_NL.utf8", orders = "my", quiet = TRUE)
 report_title_sfx <- sf(cz_reporting_day_one)
 
@@ -228,41 +239,44 @@ for (cur_title in unique(cz_stats_merged_a$pgm_title)) {
     mutate(
       date = as_date(bc_from),
       time = format(bc_from, "%H:%M"),
-      weekday = lubridate::wday(date, label = TRUE, abbr = FALSE), 
+      weekday = lubridate::wday(date, label = TRUE, abbr = FALSE, locale = "nl_NL.utf8"), 
       ordered = "A"
     ) |>
-    # select(weekday, date, time, stream, pgm_title, bc_hours, unique_ips, tot_hours, ordered)
     select(weekday, date, time, stream, bc_hours, unique_ips, tot_hours, ordered)
   
   cz_total <- cz_summary |>
     summarise(
-      weekday = "TOTAL",
+      weekday = "TOTAAL",
       date = as.Date(NA),
       time = "",
       stream = "",
-      # pgm_title = "",
-      bc_hours = NA_real_,
-      unique_ips = NA_integer_,
+      bc_hours = sum(bc_hours),
+      unique_ips = sum(unique_ips),
       tot_hours = sum(tot_hours),
       ordered = "B"
     )
   
   cz_final <- bind_rows(cz_summary, cz_total) |> 
     mutate(
-      date = if_else(weekday == "TOTAL", "", as.character(date)),
-      bc_hours = if_else(weekday == "TOTAL", "", as.character(bc_hours)),
-      unique_ips = if_else(weekday == "TOTAL", "", as.character(unique_ips))
+      date = if_else(weekday == "TOTAAL", "", as.character(date)),
+      bc_hours = format(bc_hours, big.mark = ".", decimal.mark = ",", scientific = FALSE),
+      unique_ips = format(unique_ips, big.mark = ".", decimal.mark = ",", scientific = FALSE),
+      tot_hours = format(tot_hours, big.mark = ".", decimal.mark = ",", scientific = FALSE)
     ) |> 
     arrange(ordered, stream, weekday) |> 
-    select(-ordered)
+    select(-ordered) |> 
+    rename(dag = weekday, datum = date, tijd = time, uitzenduren = bc_hours, 
+           luisteraars = unique_ips, luisteruren = tot_hours) |> 
+    mutate(uitzending = str_glue("{datum}  {tijd}")) |> 
+    select(dag, uitzending, everything(), -datum, -tijd)
   
   print(nrow(cz_final))
   
   # Render PDF using Rmd template
   render(
-    input = "cz_stats_report.Rmd",
+    input = "cz_stats_report_pgm.Rmd",
     output_file = str_glue("{cur_title}{report_title_sfx}.pdf"),
-    output_dir = stats_flr,
+    output_dir = stats_flr_reports,
     params = list(
       title = str_glue("{cur_title}{report_title_sfx}"),
       data = cz_final
@@ -274,13 +288,15 @@ for (cur_title in unique(cz_stats_merged_a$pgm_title)) {
 # . themakanalen ----
 cat("Compiling themakanalen\n")
 cz_summary <- cz_stats_merged |> filter(pgm_title == "themakanaal") |>
-  mutate(ordered = "A") |> select(stream, bc_hours, unique_ips, tot_hours, ordered)
+  mutate(ordered = "A",
+         bc_hours = if_else(stream == "overige_themakanalen", 16 * bc_hours, bc_hours)) |> 
+  select(stream, bc_hours, unique_ips, tot_hours, ordered)
 
 cz_total <- cz_summary |>
   summarise(
-    stream = "TOTAL",
-    bc_hours = NA_real_,
-    unique_ips = NA_integer_,
+    stream = "TOTAAL",
+    bc_hours = sum(bc_hours),
+    unique_ips = sum(unique_ips),
     tot_hours = sum(tot_hours),
     ordered = "B"
   )
@@ -292,21 +308,12 @@ cz_final_tk <- bind_rows(cz_summary, cz_total) |>
     unique_ips = as.numeric(unique_ips),  # convert from character (if needed)
     unique_ips = round(unique_ips, -1),
     unique_ips = format(unique_ips, big.mark = ".", decimal.mark = ",", scientific = FALSE),
-    unique_ips = if_else(stream == "TOTAL", "", unique_ips),
-    bc_hours = if_else(stream == "TOTAL", "", as.character(bc_hours))) |> 
-  arrange(ordered) |> select(-ordered)
-
-# # Render PDF using Rmd template
-# render(
-#   input = "cz_stats_report_tk.Rmd",
-#   output_file = str_glue("Themakanalen{report_title_sfx}.pdf"),
-#   output_dir = stats_flr,
-#   params = list(
-#     title = str_glue("Themakanalen{report_title_sfx}"),
-#     data = cz_final
-#   ),
-#   envir = new.env(parent = globalenv())  # avoid variable leakage
-# )
+    # unique_ips = if_else(stream == "TOTAAL", "", unique_ips),
+    bc_hours = format(bc_hours, big.mark = ".", decimal.mark = ",", scientific = FALSE)) |> 
+  arrange(ordered) |> select(-ordered) |> 
+  rename(uitzenduren = bc_hours,
+         luisteraars = unique_ips,
+         luisteruren = tot_hours)
 
 # . on-demand ----
 cat("Compiling OnDemand\n")
@@ -324,9 +331,9 @@ cz_summary <- bind_cols(cz_summary, tot_h_col) |> rename(multiplier = value) |>
 
 cz_total <- cz_summary |>
   summarise(
-    stream = "TOTAL",
+    stream = "TOTAAL",
     bc_from = NA_Date_,
-    bc_hours = NA_real_,
+    bc_hours = sum(bc_hours),
     total_ips = sum(as.numeric(total_ips)),
     tot_hours = sum(tot_hours),
     ordered = "B"
@@ -334,26 +341,42 @@ cz_total <- cz_summary |>
 
 cz_final_rod <- bind_rows(cz_summary, cz_total) |> 
   mutate(
-    # total_ips = as.numeric(total_ips),  # convert from character (if needed)
     total_ips = round(total_ips, -1),
     total_ips = format(total_ips, big.mark = ".", decimal.mark = ",", scientific = FALSE),
-    # total_ips = if_else(stream == "TOTAL", "", total_ips),
     tot_hours = round(tot_hours, -1),  # round to nearest 10
     tot_hours = format(tot_hours, big.mark = ".", decimal.mark = ",", scientific = FALSE),
-    bc_hours = if_else(stream == "TOTAL", "", as.character(bc_hours)),
-    bc_from = if_else(stream == "TOTAL", "", as.character(bc_from))) |> 
-  arrange(ordered) |> select(-ordered) |> rename(bc_date = bc_from)
+    bc_hours = format(bc_hours, big.mark = ".", decimal.mark = ",", scientific = FALSE),
+    bc_from = if_else(stream == "TOTAAL", "", as.character(bc_from))) |> 
+  arrange(ordered) |> select(-ordered) |> 
+  rename(dag = bc_from, uitzendingen = bc_hours, luisteraars = total_ips, luisteruren = tot_hours)
 
-# Render PDF using Rmd template
+# . unique IP's ----
+unique_ips <- unique(c(unique(cz_stats_rod.2$ip_address), unique(cz_stats_cha.1a$lg_ip))) |> length()
+
+# . rendering ----
 render(
   input = "cz_stats_report_tk_rod.Rmd",
   output_file = str_glue("Themakanalen & OnDemand{report_title_sfx}.pdf"),
-  output_dir = stats_flr,
+  output_dir = stats_flr_reports,
   params = list(
     title = str_glue("Themakanalen & OnDemand{report_title_sfx}"),
     data_tk = cz_final_tk,
-    data_rod = cz_final_rod
+    data_rod = cz_final_rod,
+    data_ips = unique_ips
   ),
   envir = new.env(parent = globalenv())  # avoid variable leakage
 )
 
+# upload GD ----
+# drive_auth(cache = ".secrets", email = "cz.teamservice@gmail.com")
+sf_flr_a <- lubridate::stamp("1985-07", locale = "nl_NL.utf8", orders = "ym", quiet = TRUE)
+sf_flr_b <- lubridate::stamp("juli", locale = "nl_NL.utf8", orders = "m", quiet = TRUE)
+flr_a <- sf_flr_a(cz_reporting_day_one)
+flr_b <- sf_flr_b(cz_reporting_day_one)
+gd_flr <- drive_get(path = str_glue("Statistieken/luistercijfers_2025/{flr_a}, {flr_b}"))
+gd_flr_id <- as_id(gd_flr)
+stats_files <- list.files(str_glue("{stats_flr}/reports"), full.names = TRUE)
+walk(stats_files, ~ drive_upload(.x, path = gd_flr_id, type = "application/pdf"))
+
+# drive_upload(media = "/home/lon/Documents/cz_stats_data/2025-01/reports/Acoustic Roots - luistercijfers januari 2025.pdf",
+#              path = gd_fid, type = "application/pdf")
