@@ -1,3 +1,8 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# 1. create hourly titles from nipper-pc query cz_wj_stats_hourly_titles.sql in C:\Users\nipper\Documents\cz_queries
+# 2. run manually from beginning to "MARK"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 pacman::p_load(magrittr, tidyr, dplyr, stringr, readr, lubridate, fs, futile.logger, kableExtra,
                purrr, jsonlite, httr, yaml, ssh, googledrive, data.table, tinytex, rmarkdown)
 
@@ -15,13 +20,19 @@ cz_reporting_stop <- ceiling_date(cz_reporting_day_one + ddays(1), unit = "month
 fa <- flog.appender(appender.file(cz_stats_cfg$log_appender_file), "statslog")
 flog.info(paste0("selecting logs for ", cz_reporting_day_one_chr), name = "statslog")
 
-# init stats directory
+# init stats directories
 stats_flr <- paste0(cz_stats_cfg$stats_data_home, str_sub(cz_reporting_day_one_chr, 1, 7))
+dir_create(stats_flr)
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# >> MARK ----
+# Execute manually upto this point, then store hourly_titles.tsv, then run from here
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 stats_flr_reports <- str_glue("{stats_flr}/reports")
 
 # prep STREAM+ROD logs ----
-if (!dir_exists(stats_flr)) {
-  dir_create(stats_flr)
+if (!dir_exists(stats_flr_reports)) {
   dir_create(stats_flr_reports)
   
   # . known periods logged ----
@@ -134,7 +145,6 @@ cz_stats_cha.2 <- cz_stats_cha.1a |> mutate(stream = paste0(str_to_lower(bc_src)
 dt_cz_stats_cha <- as.data.table(cz_stats_cha.2) # |> filter(str_detect(stream, "live_stream$")))
 
 # load hourly titles ----
-# create hourly titles from nipper-pc query cz_wj_stats_hourly_titles.sql in C:\Users\nipper\Documents\cz_queries
 hourly_titles_raw <- read_tsv(str_glue("{stats_flr}/hourly_titles.tsv"), 
                               col_names = c("pgm_start", "pgm_stop", "pgm_title", "post_type"),
                               col_types = cols(.default = "c"))
@@ -368,7 +378,7 @@ render(
 )
 
 # upload GD ----
-# drive_auth(cache = ".secrets", email = "cz.teamservice@gmail.com")
+drive_auth(cache = ".secrets", email = "cz.teamservice@gmail.com")
 sf_flr_a <- lubridate::stamp("1985-07", locale = "nl_NL.utf8", orders = "ym", quiet = TRUE)
 sf_flr_b <- lubridate::stamp("juli", locale = "nl_NL.utf8", orders = "m", quiet = TRUE)
 flr_a <- sf_flr_a(cz_reporting_day_one)
