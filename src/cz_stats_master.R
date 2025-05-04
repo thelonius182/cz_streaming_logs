@@ -1,6 +1,9 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# 1. create hourly titles from nipper-pc query cz_wj_stats_hourly_titles.sql in C:\Users\nipper\Documents\cz_queries
-# 2. run manually from beginning to "MARK"
+# 1a. adjust `current_month` in config.yaml
+# 1b. create hourly titles from nipper-pc query cz_wj_stats_hourly_titles.sql in C:\Users\nipper\Documents\cz_queries
+# 2. export from MySQL Workbench as `hourly_titles.txt` (sic) into  g:\salsa
+# 3. download to UBU-VM into C:\u2\muziekweb_downloads\cz_stats_wpdata >> /mnt/muw/cz_stats_wpdata/
+# 4. run manually up to the ">> MARK" mark.
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 pacman::p_load(magrittr, tidyr, dplyr, stringr, readr, lubridate, fs, futile.logger, kableExtra,
@@ -23,13 +26,13 @@ flog.info(paste0("selecting logs for ", cz_reporting_day_one_chr), name = "stats
 # init stats directories
 stats_flr <- paste0(cz_stats_cfg$stats_data_home, str_sub(cz_reporting_day_one_chr, 1, 7))
 dir_create(stats_flr)
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# >> MARK ----
-# Execute manually upto this point, then store hourly_titles.tsv, then run from here
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 stats_flr_reports <- str_glue("{stats_flr}/reports")
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# >> MARK ----
+# Execute manually upto this point, then store hourly_titles.tsv from /mnt/muw/cz_stats_wpdata/ into {stats_flr} 
+# then run from here
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # prep STREAM+ROD logs ----
 if (!dir_exists(stats_flr_reports)) {
@@ -145,9 +148,10 @@ cz_stats_cha.2 <- cz_stats_cha.1a |> mutate(stream = paste0(str_to_lower(bc_src)
 dt_cz_stats_cha <- as.data.table(cz_stats_cha.2) # |> filter(str_detect(stream, "live_stream$")))
 
 # load hourly titles ----
-hourly_titles_raw <- read_tsv(str_glue("{stats_flr}/hourly_titles.tsv"), 
-                              col_names = c("pgm_start", "pgm_stop", "pgm_title", "post_type"),
-                              col_types = cols(.default = "c"))
+hourly_titles_raw <- read_tsv(str_glue("{stats_flr}/hourly_titles.txt"), 
+                              col_types = cols(.default = "c")) |> 
+  rename(pgm_start = pgmStart, pgm_stop = pgmStop, pgm_title = pgmTitle)
+
 # . add theme channels ----
 titles_tk <- read_tsv(str_glue("{cz_stats_cfg$stats_data_home}/titles_theme_channels.tsv"), 
                              col_names = c("pgm_title", "post_type"),
@@ -383,10 +387,10 @@ sf_flr_a <- lubridate::stamp("1985-07", locale = "nl_NL.utf8", orders = "ym", qu
 sf_flr_b <- lubridate::stamp("juli", locale = "nl_NL.utf8", orders = "m", quiet = TRUE)
 flr_a <- sf_flr_a(cz_reporting_day_one)
 flr_b <- sf_flr_b(cz_reporting_day_one)
-gd_flr <- drive_get(path = str_glue("Statistieken/luistercijfers_2025/{flr_a}, {flr_b}"))
+gd_parent_flr_chr <- "Statistieken/luistercijfers_2025/"
+gd_parent_flr <- drive_get(path = gd_parent_flr_chr)
+drive_mkdir(str_glue("{flr_a}, {flr_b}"), path = gd_parent_flr)
+gd_flr <- drive_get(path = str_glue("{gd_parent_flr_chr}{flr_a}, {flr_b}"))
 gd_flr_id <- as_id(gd_flr)
 stats_files <- list.files(str_glue("{stats_flr}/reports"), full.names = TRUE)
 walk(stats_files, ~ drive_upload(.x, path = gd_flr_id, type = "application/pdf"))
-
-# drive_upload(media = "/home/lon/Documents/cz_stats_data/2025-01/reports/Acoustic Roots - luistercijfers januari 2025.pdf",
-#              path = gd_fid, type = "application/pdf")
