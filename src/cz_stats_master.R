@@ -1,9 +1,10 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# 1a. adjust `current_month` in config.yaml
-# 1b. create hourly titles from nipper-pc query cz_wj_stats_hourly_titles.sql in C:\Users\nipper\Documents\cz_queries
-# 2. export from MySQL Workbench as `hourly_titles.txt` (sic) into  g:\salsa
-# 3. download to UBU-VM into C:\u2\muziekweb_downloads\cz_stats_wpdata >> /mnt/muw/cz_stats_wpdata/
-# 4. run manually up to the ">> MARK" mark.
+# 1. adjust `current_month` in config.yaml
+# 2. on AnyDesk/Nipper-pc:
+#     a. run C:\Users\nipper\Documents\cz_queries > cz_wj_stats_hourly_titles.sql
+#     b. export as tab-sep file from MySQL Workbench as `salsa_stats_all_pgms.txt` (sic) into g:\salsa
+#     c. download to UBU-VM into C:\u2\muziekweb_downloads\cz_stats_wpdata >> /mnt/muw/cz_stats_wpdata/
+# 3. run this script manually up to the ">> MARK" mark.
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 pacman::p_load(magrittr, tidyr, dplyr, stringr, readr, lubridate, fs, futile.logger, kableExtra,
@@ -30,9 +31,67 @@ stats_flr_reports <- str_glue("{stats_flr}/reports")
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # >> MARK ----
-# Execute manually upto this point, then store hourly_titles.tsv from /mnt/muw/cz_stats_wpdata/ into {stats_flr} 
-# then run from here
+# Execute manually upto this point, then store salsa_stats_all_pgms.txt from /mnt/muw/cz_stats_wpdata/ into 
+# {stats_flr} and continue from here
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# prep hourly titles ----
+titles_by_pgm_start.all <- read_tsv(str_glue("{stats_flr}/salsa_stats_all_pgms.txt"), col_types = cols(.default = "c")) |> 
+  group_by(pgm_start, post_type) |> mutate(idx = row_number()) |> ungroup() |> filter(idx == 1) |> 
+  mutate(pgm_title = str_replace_all(pgm_title, "&amp;", "&"),
+         pgm_title = case_when(str_detect(pgm_title, 
+                                          pattern = regex("acoustic moods", ignore_case = TRUE)) ~ "Acoustic Moods",
+                               str_detect(pgm_title, 
+                                          pattern = regex("concertzender live", ignore_case = TRUE)) ~ "Concertzender Live",
+                               str_detect(pgm_title, 
+                                          pattern = regex("mazen van het net", ignore_case = TRUE)) ~ "Door de Mazen van het Net",
+                               str_detect(pgm_title, 
+                                          pattern = regex("folk it", ignore_case = TRUE)) ~ "Folk It!",
+                               str_detect(pgm_title, 
+                                          pattern = regex("geen dag zonder bach", ignore_case = TRUE)) ~ "Geen Dag zonder Bach",
+                               str_detect(pgm_title, 
+                                          pattern = regex("ochtendeditie", ignore_case = TRUE)) ~ "Ochtendeditie",
+                               str_detect(pgm_title, 
+                                          pattern = regex("kroniek van", ignore_case = TRUE)) ~ "Kroniek van de Nederlandse Muziek",
+                               str_detect(pgm_title, 
+                                          pattern = regex("oriënt", ignore_case = TRUE)) ~ "Oriënt Express",
+                               str_detect(pgm_title, 
+                                          pattern = regex("framework", ignore_case = TRUE)) ~ "Framework",
+                               pgm_title == "American Highways | Rush Hour" ~ "American Highways",
+                               pgm_title == "CD van de week" ~ "CD van de Week",
+                               pgm_title == "Componist van de maand" ~ "Componist van de Maand",
+                               pgm_title == "De boekenkast" ~ "De Boekenkast",
+                               pgm_title == "De diva op de erwt" ~ "De Diva op de erwt",
+                               pgm_title == "De Vorige eeuw" ~ "De Vorige Eeuw",
+                               pgm_title == "De wandeling" ~ "De Wandeling",
+                               pgm_title == "Disc-cover" ~ "Disc-Cover!",
+                               pgm_title == "Disc-Cover" ~ "Disc-Cover!",
+                               pgm_title == "Front Runnin'" ~ "Front Runnin’",
+                               pgm_title == "Het Chanson" ~ "Chanson",
+                               pgm_title == "JazzNotJazz Music & Politics" ~ "JazzNotJazz",
+                               pgm_title == "Klassieke muziek actua" ~ "Klassieke muziek Actua",
+                               pgm_title == "L'Esprit Baroque" ~ "L’Esprit Baroque",
+                               pgm_title == "Missa etcetera" ~ "Missa Etcetera",
+                               pgm_title == "Moanin' the Blues" ~ "Moanin’ the Blues",
+                               pgm_title == "New Folk Sounds On Air" ~ "New Folk Sounds on Air",
+                               pgm_title == "Nieuw Verschenen" ~ "Nieuw verschenen",
+                               pgm_title == "Solta a franga" ~ "Solta a Franga",
+                               pgm_title == "Tango: Lied van Buenos Aires" ~ "Tango: lied van Buenos Aires",
+                               pgm_title == "The sound of movies" ~ "The Sound of Movies",
+                               pgm_title == "Tussen droom en daad" ~ "Tussen Droom en Daad",
+                               pgm_title == "UUR 23: Spinning the Blues / Popart Live!" ~ "Spinning the Blues",
+                               pgm_title == "Vocal Jazz" ~ "Vocale Jazz",
+                               pgm_title == "Vredenburg live" ~ "Vredenburg live!",
+                               pgm_title == "Wereldmuziek NL" ~ "Wereldmuziek NL!",
+                               pgm_title == "X-rated" ~ "X-Rated",
+                               pgm_title == "Zuiver Klassiek" ~ "Zuiver klassiek",
+                               pgm_title == "Zwerven door de renaissance" ~ "Zwerven door de Renaissance",
+                               TRUE ~ pgm_title)) |> select(-idx)
+
+stamp_pgm_ts <- lubridate::stamp("19581225", locale = "nl_NL.utf8", orders = "ymd", quiet = TRUE)
+pgm_start_min <- paste0(stamp_pgm_ts(cz_reporting_start), "_99")
+pgm_start_max <- paste0(stamp_pgm_ts(cz_reporting_stop), "_00")
+titles_by_pgm_start.cur_mnth <- titles_by_pgm_start.all |> filter(pgm_start_min < pgm_start & pgm_start < pgm_start_max)
 
 # prep STREAM+ROD logs ----
 if (!dir_exists(stats_flr_reports)) {
@@ -117,13 +176,26 @@ if (!dir_exists(stats_flr_reports)) {
            d = 120L)  |> 
     select(ip_address = lg_ipa, ts = lg_ts, d, stream)
   
+  # . - map pgms ----
+  cz_stats_rod.2a <- cz_stats_rod.2 |> select(lg_audio_file, lg_ipa, stream) |> distinct() |> 
+    group_by(lg_audio_file) |> mutate(n = n()) |> ungroup() |> filter(str_detect(stream, "on_d")) |> 
+    mutate(pgm_file = path_file(lg_audio_file),
+           pgm_start = str_remove(pgm_file, "(00)?\\.mp3$"),
+           pgm_start = str_replace(pgm_start, "[-]", "_"),
+           post_type = if_else(stream == "on_demand_cz", "programma", "programma_woj")) |> distinct() |> 
+    left_join(titles_by_pgm_start.all, by = join_by(pgm_start, post_type)) |> select(-lg_ipa) |> distinct() |> 
+    select(pgm_title, post_type, n) |> group_by(pgm_title, post_type) |> summarise(tot_listeners = sum(n)) |> ungroup() |> 
+    filter(!is.na(pgm_title))
+  
   # . store as RDS ----
   write_rds(cz_stats_rod.2, str_glue("{stats_flr}/cz_stats_rod.2.RDS"))
+  write_rds(cz_stats_rod.2a, str_glue("{stats_flr}/cz_stats_rod.2a.RDS"))
   cat("ROD logfiles prepped\n")
   rm(cz_stats_rod.1)
 } else {
   cz_stats_cha.1a <- read_rds(str_glue("{stats_flr}/cz_stats_cha.1a.RDS"))
   cz_stats_rod.2 <- read_rds(str_glue("{stats_flr}/cz_stats_rod.2.RDS"))
+  cz_stats_rod.2a <- read_rds(str_glue("{stats_flr}/cz_stats_rod.2a.RDS"))
 }
 
 flog.info(paste0("line count streams = ", nrow(cz_stats_cha.1a)), name = "statslog")
