@@ -17,10 +17,10 @@ params:
 library(kableExtra)
 library(dplyr)
 
-# Sort data by weekday (optional: use custom weekday order)
+# Sort data by weekday 
 cz_sorted <- params$data |>
   arrange(factor(dag, levels = c(
-    "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag", "TOTAAL"
+    "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag", "RoD_maand", "TOTAAL"
   )))
 
 # Generate kable object
@@ -60,9 +60,13 @@ kbl_out
 \begin{samepage}
 
 \textbf{Toelichting:}
+{\raggedright
 \begin{itemize}
-  \item Deze cijfers slaan alleen op uitzendingen via de \textbf{Luister Live}-kanalen.
-  \item De cijfers voor \textbf{Radio onDemand} en \textbf{Themakanalen} zijn niet per programmatitel beschikbaar, alleen op dag- en maandniveau over alle programmatitels samen. Zie daarvoor \textbf{Themakanalen \& OnDemand.pdf}.
+  \item Cijfers over het aantal \textbf{uren} zijn alleen voor Streams beschikbaar. 
+  \item Cijfers over het aantal \textbf{luisteraars} zijn voor Streams en OnDemand beschikbaar.
+  \item Het OnDemand-cijfer slaat op luisteraars die deze maand via OnDemand naar \textbf{willekeurige} afleveringen van dit programma hebben geluisterd. Kon elke aflevering zijn die ooit van dit programma gemaakt is.
+  \item Voor zover we dit programma via themakanalen uitzenden, zijn de cijfers daarvan verwerkt in \textbf{Themakanalen.pdf}.
 \end{itemize}
+}
 
 \end{samepage}

@@ -13,7 +13,6 @@ header-includes:
 params:
   title: "Default Title"
   data_tk: NULL
-  data_rod: NULL
   data_ips: NULL
 ---
 
@@ -22,7 +21,6 @@ library(kableExtra)
 library(dplyr)
 
 total_row_tk <- which(params$data_tk$stream == "TOTAAL")
-total_row_rod <- which(params$data_rod$stream == "TOTAAL")
 
 # Generate kable object Themakanalen
 params$data_tk |> kbl(
@@ -39,23 +37,8 @@ params$data_tk |> kbl(
     position = "center"
   ) |> 
   row_spec(total_row_tk, bold = TRUE, hline_after = TRUE)
-
-# Generate kable object Radio On Demand
-params$data_rod |> kbl(
-  format = "latex",
-  booktabs = TRUE,
-  longtable = TRUE,
-  caption = "Radio on Demand (dagtotalen)",
-  align = c("l", "c", "r", "r", "r"),
-  label = "rod"
-) |>
-  kable_styling(
-    latex_options = "repeat_header",
-    font_size = 10,
-    position = "center"
-  ) |>
-  row_spec(total_row_rod, bold = TRUE, hline_after = TRUE)
 ```
+
 \begin{samepage}
 \begin{tcolorbox}[colback=gray!5, colframe=gray!60, title=Aantal unieke luisteraars]
 Deze maand waren er \textbf{`r format(params$data_ips, big.mark = ".", decimal.mark = ",")`} unieke luisteraars (over alle kanalen samen, dus Luister Live, Themakanalen en Radio OnDemand, van zowel Concertzender als World of Jazz).
