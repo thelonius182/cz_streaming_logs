@@ -44,28 +44,49 @@ titles_by_pgm_start.all <- read_tsv(str_glue("{stats_flr}/salsa_stats_all_pgms.t
                                str_detect(pgm_title, 
                                           pattern = regex("concertzender live", ignore_case = TRUE)) ~ "Concertzender Live",
                                str_detect(pgm_title, 
-                                          pattern = regex("mazen van het net", ignore_case = TRUE)) ~ "Door de Mazen van het Net",
-                               str_detect(pgm_title, 
                                           pattern = regex("folk it", ignore_case = TRUE)) ~ "Folk It!",
+                               str_detect(pgm_title, 
+                                          pattern = regex("folk sounds", ignore_case = TRUE)) ~ "New Folk Sounds on Air",
+                               str_detect(pgm_title, 
+                                          pattern = regex("framework", ignore_case = TRUE)) ~ "Framework",
                                str_detect(pgm_title, 
                                           pattern = regex("geen dag zonder bach", ignore_case = TRUE)) ~ "Geen Dag zonder Bach",
                                str_detect(pgm_title, 
-                                          pattern = regex("ochtendeditie", ignore_case = TRUE)) ~ "Ochtendeditie",
+                                          pattern = regex("klankcaf", ignore_case = TRUE)) ~ "Klankcafé",
+                               str_detect(pgm_title, 
+                                          pattern = regex("kraak helder", ignore_case = TRUE)) ~ "Kraak Helder",
                                str_detect(pgm_title, 
                                           pattern = regex("kroniek van", ignore_case = TRUE)) ~ "Kroniek van de Nederlandse Muziek",
                                str_detect(pgm_title, 
+                                          pattern = regex("lüdeke", ignore_case = TRUE)) ~ "Lüdeke Straightahead",
+                               str_detect(pgm_title, 
+                                          pattern = regex("mazen van het net", ignore_case = TRUE)) ~ "Door de Mazen van het Net",
+                               str_detect(pgm_title, 
+                                          pattern = regex("muziek-?essay", ignore_case = TRUE)) ~ "Radio Muziek-essay",
+                               str_detect(pgm_title, 
+                                          pattern = regex("ochtendeditie", ignore_case = TRUE)) ~ "Ochtendeditie",
+                               str_detect(pgm_title, 
                                           pattern = regex("oriënt", ignore_case = TRUE)) ~ "Oriënt Express",
                                str_detect(pgm_title, 
-                                          pattern = regex("framework", ignore_case = TRUE)) ~ "Framework",
+                                          pattern = regex("piano-?etude", ignore_case = TRUE)) ~ "De piano-etude, van oefening tot kunst",
+                               str_detect(pgm_title, 
+                                          pattern = regex("popart", ignore_case = TRUE)) ~ "Popart",
+                               str_detect(pgm_title, 
+                                          pattern = regex("rondje evenaar", ignore_case = TRUE)) ~ "Radio Rondje Evenaar",
+                               str_detect(pgm_title, 
+                                          pattern = regex("vredenburg live", ignore_case = TRUE)) ~ "Vredenburg live!",
                                pgm_title == "American Highways | Rush Hour" ~ "American Highways",
+                               pgm_title == "Brazil In A Nutshell" ~ "Brazil in a Nutshell",
                                pgm_title == "CD van de week" ~ "CD van de Week",
                                pgm_title == "Componist van de maand" ~ "Componist van de Maand",
+                               pgm_title == "Dansen en de blues" ~ "Dansen en de Blues",
                                pgm_title == "De boekenkast" ~ "De Boekenkast",
                                pgm_title == "De diva op de erwt" ~ "De Diva op de erwt",
                                pgm_title == "De Vorige eeuw" ~ "De Vorige Eeuw",
                                pgm_title == "De wandeling" ~ "De Wandeling",
                                pgm_title == "Disc-cover" ~ "Disc-Cover!",
                                pgm_title == "Disc-Cover" ~ "Disc-Cover!",
+                               pgm_title == "Een Vroege Wandeling" ~ "Een vroege wandeling",
                                pgm_title == "Front Runnin'" ~ "Front Runnin’",
                                pgm_title == "Het Chanson" ~ "Chanson",
                                pgm_title == "JazzNotJazz Music & Politics" ~ "JazzNotJazz",
@@ -81,11 +102,12 @@ titles_by_pgm_start.all <- read_tsv(str_glue("{stats_flr}/salsa_stats_all_pgms.t
                                pgm_title == "Tussen droom en daad" ~ "Tussen Droom en Daad",
                                pgm_title == "UUR 23: Spinning the Blues / Popart Live!" ~ "Spinning the Blues",
                                pgm_title == "Vocal Jazz" ~ "Vocale Jazz",
-                               pgm_title == "Vredenburg live" ~ "Vredenburg live!",
                                pgm_title == "Wereldmuziek NL" ~ "Wereldmuziek NL!",
+                               pgm_title == "Wereldmuze" ~ "WereldMuze",
                                pgm_title == "X-rated" ~ "X-Rated",
                                pgm_title == "Zuiver Klassiek" ~ "Zuiver klassiek",
                                pgm_title == "Zwerven door de renaissance" ~ "Zwerven door de Renaissance",
+                               pgm_title == "Zwerven door de barok" ~ "Zwerven door de Barok",
                                TRUE ~ pgm_title)) |> select(-idx)
 
 stamp_pgm_ts <- lubridate::stamp("19581225", locale = "nl_NL.utf8", orders = "ymd", quiet = TRUE)
@@ -174,18 +196,18 @@ if (!dir_exists(stats_flr_reports)) {
                               audio_path == "/cz_rod/cp" ~ "concertpodium",
                               TRUE ~ "on_demand_cz"),
            d = 120L)  |> 
-    select(ip_address = lg_ipa, ts = lg_ts, d, stream)
+    select(ip_address = lg_ipa, ts = lg_ts, d, stream, lg_audio_file)
   
   # . - map pgms ----
-  cz_stats_rod.2a <- cz_stats_rod.2 |> select(lg_audio_file, lg_ipa, stream) |> distinct() |> 
+  cz_stats_rod.2a <- cz_stats_rod.2 |> select(lg_audio_file, ip_address, stream) |> distinct() |> 
     group_by(lg_audio_file) |> mutate(n = n()) |> ungroup() |> filter(str_detect(stream, "on_d")) |> 
     mutate(pgm_file = path_file(lg_audio_file),
-           pgm_start = str_remove(pgm_file, "(00)?\\.mp3$"),
+           pgm_start = str_extract(pgm_file, "[0-9]{8}-[0-9]{2}"),
            pgm_start = str_replace(pgm_start, "[-]", "_"),
            post_type = if_else(stream == "on_demand_cz", "programma", "programma_woj")) |> distinct() |> 
-    left_join(titles_by_pgm_start.all, by = join_by(pgm_start, post_type)) |> select(-lg_ipa) |> distinct() |> 
-    select(pgm_title, post_type, n) |> group_by(pgm_title, post_type) |> summarise(tot_listeners = sum(n)) |> ungroup() |> 
-    filter(!is.na(pgm_title))
+    left_join(titles_by_pgm_start.all, by = join_by(pgm_start, post_type)) |> select(-ip_address) |> distinct() |> 
+    filter(!is.na(pgm_title)) |> 
+    select(pgm_title, post_type, n) |> group_by(pgm_title, post_type) |> summarise(tot_listeners = sum(n)) |> ungroup() 
   
   # . store as RDS ----
   write_rds(cz_stats_rod.2, str_glue("{stats_flr}/cz_stats_rod.2.RDS"))
@@ -275,14 +297,14 @@ cz_stats_sessions_cha <- result_info |>
   mutate(pgm_title = if_else(str_detect(pgm_title, "themakana"), "themakanaal", pgm_title))
 
 # link rod-streams ----
-rod_stream_order <- c("on_demand_cz", "concertpodium", "on_demand_woj")
-cz_stats_rod.3 <- count_listeners(log_data = cz_stats_rod.2) |> filter(session_hour < cz_reporting_stop) 
-cz_stats_sessions_rod <- cz_stats_rod.3 |> 
-  mutate(stream = factor(stream, levels = rod_stream_order)) |> 
-  arrange(session_hour, stream) |> 
-  rename(bc_from = session_hour, unique_ips = unique_listener_count) |> 
-  mutate(pgm_title = NA_character_, tot_hours = NA_real_, bc_hours = 1) |> 
-  select(pgm_title, stream, bc_from, bc_hours, unique_ips, tot_hours)
+# rod_stream_order <- c("on_demand_cz", "concertpodium", "on_demand_woj")
+# cz_stats_rod.3 <- count_listeners(log_data = cz_stats_rod.2) |> filter(session_hour < cz_reporting_stop) 
+# cz_stats_sessions_rod <- cz_stats_rod.3 |> 
+#   mutate(stream = factor(stream, levels = rod_stream_order)) |> 
+#   arrange(session_hour, stream) |> 
+#   rename(bc_from = session_hour, unique_ips = unique_listener_count) |> 
+#   mutate(pgm_title = NA_character_, tot_hours = NA_real_, bc_hours = 1) |> 
+#   select(pgm_title, stream, bc_from, bc_hours, unique_ips, tot_hours)
   
 # link stats and reorder ----
 merged_stream_order <- c("cz_live_stream", "woj_live_stream", "cz_on_demand", "woj_on_demand",
@@ -312,6 +334,7 @@ cz_stats_merged <- bind_rows(cz_stats_merged.1, cz_stats_rod.4) |> arrange(pgm_t
 # store final result ----
 write_rds(cz_stats_merged, str_glue("{stats_flr}/cz_stats_merged.RDS"))
 
+sf <- lubridate::stamp(" - luistercijfers oktober 2021", locale = "nl_NL.utf8", orders = "my", quiet = TRUE)
 report_title_sfx <- sf(cz_reporting_day_one)
 cz_sheet <- "cz_stats"
 wb <- createWorkbook()
@@ -325,7 +348,6 @@ saveWorkbook(wb, str_glue("{stats_flr_reports}/cz_stats_merged{report_title_sfx}
 # . live-streams ----
 # cz_stats_merged_a <- cz_stats_merged |> filter(str_detect(pgm_title, "Droom"))
 cz_stats_merged_a <- cz_stats_merged |> filter(!pgm_title %in% c("on_demand", "themakanaal"))
-sf <- lubridate::stamp(" - luistercijfers oktober 2021", locale = "nl_NL.utf8", orders = "my", quiet = TRUE)
 
 for (cur_title in unique(cz_stats_merged_a$pgm_title)) {
   cat("Rendering:", cur_title, "\n")
@@ -453,7 +475,7 @@ cz_final_tk <- bind_rows(cz_summary, cz_total) |>
 #   rename(dag = bc_from, uitzendingen = bc_hours, luisteraars = total_ips, luisteruren = tot_hours)
 
 # . unique IP's ----
-unique_ips <- unique(c(unique(cz_stats_rod.2$lg_ipa), unique(cz_stats_cha.1a$lg_ip))) |> length()
+unique_ips <- unique(c(unique(cz_stats_rod.2$ip_address), unique(cz_stats_cha.1a$lg_ip))) |> length()
 
 # . rendering ----
 render(
@@ -479,5 +501,10 @@ gd_parent_flr <- drive_get(path = gd_parent_flr_chr)
 drive_mkdir(str_glue("{flr_a}, {flr_b}"), path = gd_parent_flr)
 gd_flr <- drive_get(path = str_glue("{gd_parent_flr_chr}{flr_a}, {flr_b}"))
 gd_flr_id <- as_id(gd_flr)
-stats_files <- list.files(str_glue("{stats_flr}/reports"), full.names = TRUE)
+
+stats_files <- list.files(str_glue("{stats_flr}/reports"), full.names = TRUE, pattern = "\\.pdf$")
 walk(stats_files, ~ drive_upload(.x, path = gd_flr_id, type = "application/pdf"))
+
+stats_files <- list.files(str_glue("{stats_flr}/reports"), full.names = TRUE, pattern = "\\.xlsx$")
+walk(stats_files, ~ drive_upload(.x, path = gd_flr_id, 
+                                 type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
