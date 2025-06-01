@@ -334,10 +334,18 @@ cz_stats_merged <- bind_rows(cz_stats_merged.1, cz_stats_rod.4) |> arrange(pgm_t
 # store final result ----
 write_rds(cz_stats_merged, str_glue("{stats_flr}/cz_stats_merged.RDS"))
 
+# prepare excel ----
 sf <- lubridate::stamp(" - luistercijfers oktober 2021", locale = "nl_NL.utf8", orders = "my", quiet = TRUE)
-report_title_sfx <- sf(cz_reporting_day_one)
-cz_sheet <- "cz_stats"
 wb <- createWorkbook()
+report_title_sfx <- sf(cz_reporting_day_one)
+
+titles_by_desk <- read_tsv(str_glue("{stats_flr}/titel-genre koppeling.txt"), col_types = cols(.default = "c")) |> 
+  mutate(titel = str_replace(titel, "&amp;", "&"))
+cz_sheet <- "genres_en_redacties"
+addWorksheet(wb, cz_sheet)
+writeData(wb, cz_sheet, titles_by_desk)
+
+cz_sheet <- "cz_stats"
 addWorksheet(wb, cz_sheet)
 writeData(wb, cz_sheet, cz_stats_merged)
 datetime_style <- createStyle(numFmt = "yyyy-mm-dd hh:mm")
