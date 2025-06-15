@@ -1,6 +1,5 @@
 proc_gh_logs <- function(pe_log_type) {
 
-  browser()
   gh_log_dir <- ifelse(pe_log_type == "RoD", "apache2", "icecast2")
 
   gh_log_run_ymd = now(tzone = "Europe/Amsterdam")
@@ -104,7 +103,7 @@ proc_gh_logs <- function(pe_log_type) {
     if (is.null(gh_logs_his)) {
       gh_logs_his <- gh_logs_new
     } else {
-      gh_logs_his %<>% bind_rows(gh_logs_new)
+      gh_logs_his <- gh_logs_his |> bind_rows(gh_logs_new)
     }
 
     write_rds(x = gh_logs_his, file = gh_rds_filename, compress = "gz")

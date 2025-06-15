@@ -6,7 +6,7 @@ pacman::p_load(R.utils, magrittr, tidyr, dplyr, stringr, readr, lubridate, fs,
                futile.logger, jsonlite, httr, ssh)
 
 # init logger ----
-fa <- flog.appender(appender.file("~/ghlogs/cz_stats_proc.log"), "cz_stats_proc_log")
+fa <- flog.appender(appender.file("c:/Users/nipper/Documents/ghlogs/cz_stats_proc.log"), "cz_stats_proc_log")
 
 source(file = "src/prep_funcs.R", encoding = "UTF-8")
 
